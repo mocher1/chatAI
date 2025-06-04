@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Send, Loader2 } from 'lucide-react';
+import { VariableSizeList as List } from 'react-window';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -14,15 +15,29 @@ const ChatBox: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<List>(null);
+  const rowHeights = useRef<Record<number, number>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [listHeight, setListHeight] = useState(0);
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = useCallback(() => {
+    listRef.current?.scrollToItem(messages.length - 1);
+  }, [messages.length]);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (containerRef.current) {
+        setListHeight(containerRef.current.clientHeight);
+      }
+    };
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     const saved = localStorage.getItem('chatMessages');
@@ -179,7 +194,10 @@ const ChatBox: React.FC = () => {
         </div>
         
         <div className="glass-card rounded-2xl overflow-hidden shadow-glow">
-          <div className="h-[70vh] md:h-[500px] overflow-y-auto p-6 space-y-6">
+          <div
+            ref={containerRef}
+            className="h-[70vh] md:h-[500px] overflow-y-auto p-6"
+          >
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-8 animate-fade-in">
                 <p className="text-lg mb-4">
@@ -190,29 +208,58 @@ const ChatBox: React.FC = () => {
                 </p>
               </div>
             ) : (
-              messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-up`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
+              listHeight > 0 && (
+                <List
+                  height={listHeight}
+                  itemCount={messages.length}
+                  itemSize={(index) =>
+                    (rowHeights.current[index] ?? 0) + 24
+                  }
+                  width="100%"
+                  ref={listRef}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-2xl p-4 ${
-                      message.role === 'user'
-                        ? 'chat-gradient text-white'
-                        : 'bg-white shadow-lg'
-                    }`}
-                  >
-                    <ReactMarkdown
-                      className="prose prose-sm whitespace-pre-wrap"
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeHighlight]}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              ))
+                  {({ index, style }) => {
+                    const message = messages[index];
+                    return (
+                      <div style={style}>
+                        <div
+                          style={{ marginBottom: '24px' }}
+                          ref={(el) => {
+                            if (el) {
+                              const height = el.getBoundingClientRect().height;
+                              if (rowHeights.current[index] !== height) {
+                                rowHeights.current[index] = height;
+                                listRef.current?.resetAfterIndex(index);
+                              }
+                            }
+                          }}
+                          className={`flex ${
+                            message.role === 'user'
+                              ? 'justify-end'
+                              : 'justify-start'
+                          } ${index === messages.length - 1 ? 'animate-fade-up' : ''}`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-2xl p-4 ${
+                              message.role === 'user'
+                                ? 'chat-gradient text-white'
+                                : 'bg-white shadow-lg'
+                            }`}
+                          >
+                            <ReactMarkdown
+                              className="prose prose-sm whitespace-pre-wrap"
+                              remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeHighlight]}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }}
+                </List>
+              )
             )}
             {isLoading && (
               <div className="flex justify-start animate-fade-in">
@@ -221,7 +268,6 @@ const ChatBox: React.FC = () => {
                 </div>
               </div>
             )}
-            <div ref={chatEndRef} />
           </div>
 
           <form onSubmit={handleSubmit} className="border-t border-gray-100 p-4 bg-white/50">
