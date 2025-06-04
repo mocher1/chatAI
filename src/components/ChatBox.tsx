@@ -231,7 +231,10 @@ const ChatBox: React.FC = () => {
             {isLoading && (
               <div className="flex justify-start animate-fade-in">
                 <div className="bg-white shadow-lg rounded-2xl p-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
+                    <span>CareerGPT pisze...</span>
+                  </div>
                 </div>
               </div>
             )}
