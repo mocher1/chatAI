@@ -207,7 +207,6 @@ const ChatBox: React.FC = () => {
                       className="prose prose-sm whitespace-pre-wrap"
                       remarkPlugins={[remarkGfm]}
                       rehypePlugins={[rehypeHighlight]}
-                      linkTarget="_blank"
                     >
                       {message.content}
                     </ReactMarkdown>
