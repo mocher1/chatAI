@@ -80,3 +80,19 @@
 .animate-fade-up {
   animation: fade-up 0.5s ease-out forwards;
 }
+
+@keyframes bg-float {
+  0%,
+  100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+}
+
+.bg-floating {
+  background: linear-gradient(120deg, #ffffff 0%, #eef2ff 50%, #ffffff 100%);
+  background-size: 300% 300%;
+  animation: bg-float 25s ease-in-out infinite;
+}

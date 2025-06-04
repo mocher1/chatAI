@@ -10,7 +10,7 @@ import Footer from './components/Footer';
 
 function App() {
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col bg-floating">
       <Header />
       <main className="flex-grow">
         <HeroSection />
