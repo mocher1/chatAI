@@ -14,6 +14,7 @@ const ChatBox: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -125,6 +126,16 @@ const ChatBox: React.FC = () => {
     createThread();
   };
 
+  const handleCopy = async (index: number, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 1000);
+    } catch (err) {
+      console.error('Copy failed', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !threadId) return;
@@ -197,12 +208,24 @@ const ChatBox: React.FC = () => {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl p-4 ${
+                    className={`relative max-w-[80%] rounded-2xl p-4 ${
                       message.role === 'user'
                         ? 'chat-gradient text-white'
                         : 'bg-white shadow-lg'
                     }`}
                   >
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(index, message.content)}
+                      className="absolute top-2 right-2 text-xs text-gray-300 hover:text-gray-500"
+                    >
+                      Kopiuj
+                    </button>
+                    {copiedIndex === index && (
+                      <span className="absolute -top-5 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
+                        Skopiowano!
+                      </span>
+                    )}
                     <ReactMarkdown
                       className="prose prose-sm whitespace-pre-wrap"
                       remarkPlugins={[remarkGfm]}
