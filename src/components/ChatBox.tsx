@@ -34,12 +34,25 @@ const ChatBox: React.FC = () => {
       }
     }
 
-    createThread();
+    const savedThreadId = localStorage.getItem('threadId');
+    if (savedThreadId) {
+      setThreadId(savedThreadId);
+    } else {
+      createThread();
+    }
   }, []);
 
   useEffect(() => {
     localStorage.setItem('chatMessages', JSON.stringify(messages));
   }, [messages]);
+
+  useEffect(() => {
+    if (threadId) {
+      localStorage.setItem('threadId', threadId);
+    } else {
+      localStorage.removeItem('threadId');
+    }
+  }, [threadId]);
 
   const createThread = async () => {
     try {
@@ -121,6 +134,7 @@ const ChatBox: React.FC = () => {
   const handleNewConversation = () => {
     setMessages([]);
     localStorage.removeItem('chatMessages');
+    localStorage.removeItem('threadId');
     setThreadId(null);
     createThread();
   };
