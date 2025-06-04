@@ -76,47 +76,28 @@ const ChatBox: React.FC = () => {
     return response.json();
   };
 
-  const createRun = async (threadId: string) => {
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json'
+  const createRunStream = async (threadId: string) => {
+    const response = await fetch(
+      `https://api.openai.com/v1/threads/${threadId}/runs?stream=true`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'assistants=v2',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assistant_id: import.meta.env.VITE_ASSISTANT_ID,
+          instructions:
+            'Jesteś CareerGPT - przyjaznym doradcą zawodowym, który specjalizuje się w polskim rynku pracy. Pomagasz w pisaniu CV, przygotowaniu do rozmów kwalifikacyjnych i planowaniu kariery. Odpowiadasz po polsku, używasz prostego języka i unikasz żargonu HR. Twoje odpowiedzi są konkretne i praktyczne.',
+        }),
       },
-      body: JSON.stringify({
-        assistant_id: import.meta.env.VITE_ASSISTANT_ID,
-        instructions: "Jesteś CareerGPT - przyjaznym doradcą zawodowym, który specjalizuje się w polskim rynku pracy. Pomagasz w pisaniu CV, przygotowaniu do rozmów kwalifikacyjnych i planowaniu kariery. Odpowiadasz po polsku, używasz prostego języka i unikasz żargonu HR. Twoje odpowiedzi są konkretne i praktyczne."
-      })
-    });
-    
-    if (!response.ok) throw new Error('Failed to create run');
-    return response.json();
+    );
+
+    if (!response.ok || !response.body) throw new Error('Failed to create run');
+    return response.body;
   };
 
-  const checkRunStatus = async (threadId: string, runId: string) => {
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
-      }
-    });
-    
-    if (!response.ok) throw new Error('Failed to check run status');
-    return response.json();
-  };
-
-  const getMessages = async (threadId: string) => {
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?limit=1`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
-      }
-    });
-    
-    if (!response.ok) throw new Error('Failed to get messages');
-    return response.json();
-  };
 
   const handleNewConversation = () => {
     setMessages([]);
@@ -131,32 +112,72 @@ const ChatBox: React.FC = () => {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+
+    const assistantIndexRef = { current: 0 };
+    setMessages(prev => {
+      const newMsgs = [...prev, { role: 'user', content: userMessage }];
+      assistantIndexRef.current = newMsgs.length;
+      return [...newMsgs, { role: 'assistant', content: '' }];
+    });
+
     setIsLoading(true);
 
     try {
       await addMessage(threadId, userMessage);
-      const run = await createRun(threadId);
+      const stream = await createRunStream(threadId);
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      let runStatus = await checkRunStatus(threadId, run.id);
-      while (runStatus.status !== 'completed') {
-        if (runStatus.status === 'failed' || runStatus.status === 'cancelled') {
-          throw new Error(`Run ${runStatus.status}`);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const data = trimmed.replace('data:', '').trim();
+          if (data === '[DONE]') {
+            reader.cancel();
+            break;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            if (
+              parsed.event === 'thread.message.delta' &&
+              parsed.data?.delta?.content
+            ) {
+              for (const part of parsed.data.delta.content) {
+                if (part.type === 'text' && part.text?.value) {
+                  const text = part.text.value as string;
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    const msg = updated[assistantIndexRef.current];
+                    updated[assistantIndexRef.current] = {
+                      ...msg,
+                      content: msg.content + text,
+                    };
+                    return updated;
+                  });
+                }
+              }
+            }
+          } catch (err) {
+            console.error('Stream parse error:', err);
+          }
         }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        runStatus = await checkRunStatus(threadId, run.id);
       }
-
-      const messagesResponse = await getMessages(threadId);
-      const assistantMessage = messagesResponse.data[0].content[0].text.value;
-      
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Przepraszam, wystąpił błąd. Spróbuj ponownie za chwilę.' 
-      }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Przepraszam, wystąpił błąd. Spróbuj ponownie za chwilę.',
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
