@@ -11,8 +11,10 @@ const HeroSection: React.FC = () => (
             options={{
               strings: ['CareerGPT zna odpowiedź – po polsku i po ludzku.'],
               autoStart: true,
+              loop: false,
               delay: 50,
-              cursor: '|'
+              cursor: '|',
+              deleteSpeed: 999999999 // Effectively prevents deletion
             }}
           />
         </span>
