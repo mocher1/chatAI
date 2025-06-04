@@ -1,10 +1,21 @@
 import React from 'react';
+import Typewriter from 'typewriter-effect';
 
 const HeroSection: React.FC = () => (
   <section className="text-center py-24 px-6 bg-gradient-to-b from-indigo-50 to-white">
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-snug tracking-tight">
-        Masz pytanie o karierę? CareerGPT zna odpowiedź – po polsku i po ludzku.
+        Masz pytanie o karierę?{' '}
+        <span className="text-indigo-600">
+          <Typewriter
+            options={{
+              strings: ['CareerGPT zna odpowiedź – po polsku i po ludzku.'],
+              autoStart: true,
+              delay: 50,
+              cursor: '|'
+            }}
+          />
+        </span>
       </h1>
       <p className="text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed">
         Nie musisz znać się na AI. Wystarczy, że zapytasz. CareerGPT to Twój osobisty doradca zawodowy, który rozumie stres rekrutacji, polskie realia i nie używa HR-owego bełkotu.
@@ -15,9 +26,8 @@ const HeroSection: React.FC = () => (
       >
         Zacznij rozmowę
       </a>
-    
     </div>
   </section>
 );
 
-export default HeroSection
+export default HeroSection;
