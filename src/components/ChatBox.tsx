@@ -148,7 +148,7 @@ const ChatBox: React.FC = () => {
         </h2>
         
         <div className="glass-card rounded-2xl overflow-hidden shadow-glow">
-          <div className="h-[500px] overflow-y-auto p-6 space-y-6">
+          <div className="h-[70vh] md:h-[500px] overflow-y-auto p-6 space-y-6">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-8 animate-fade-in">
                 <p className="text-lg mb-4">
