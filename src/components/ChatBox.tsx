@@ -23,8 +23,21 @@ const ChatBox: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
+    const saved = localStorage.getItem('chatMessages');
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved) as Message[]);
+      } catch (err) {
+        console.error('Failed to parse saved messages', err);
+      }
+    }
+
     createThread();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('chatMessages', JSON.stringify(messages));
+  }, [messages]);
 
   const createThread = async () => {
     try {
@@ -103,6 +116,13 @@ const ChatBox: React.FC = () => {
     return response.json();
   };
 
+  const handleNewConversation = () => {
+    setMessages([]);
+    localStorage.removeItem('chatMessages');
+    setThreadId(null);
+    createThread();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !threadId) return;
@@ -143,9 +163,18 @@ const ChatBox: React.FC = () => {
   return (
     <section id="chat" className="py-12 px-6">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-8 animate-fade-up">
+        <h2 className="text-3xl font-bold text-center mb-4 animate-fade-up">
           Porozmawiaj z CareerGPT
         </h2>
+        <div className="text-right mb-4">
+          <button
+            type="button"
+            onClick={handleNewConversation}
+            className="text-sm font-medium text-primary-600 hover:text-primary-700 transition"
+          >
+            Nowa rozmowa
+          </button>
+        </div>
         
         <div className="glass-card rounded-2xl overflow-hidden shadow-glow">
           <div className="h-[500px] overflow-y-auto p-6 space-y-6">
