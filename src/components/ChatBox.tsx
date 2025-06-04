@@ -12,9 +12,17 @@ interface Message {
 const ChatBox: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const adjustTextareaHeight = () => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  };
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,6 +48,10 @@ const ChatBox: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('chatMessages', JSON.stringify(messages));
   }, [messages]);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input]);
 
   const createThread = async () => {
     try {
@@ -125,8 +137,7 @@ const ChatBox: React.FC = () => {
     createThread();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendMessage = async () => {
     if (!input.trim() || isLoading || !threadId) return;
 
     const userMessage = input.trim();
@@ -149,16 +160,31 @@ const ChatBox: React.FC = () => {
 
       const messagesResponse = await getMessages(threadId);
       const assistantMessage = messagesResponse.data[0].content[0].text.value;
-      
+
       setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Przepraszam, wystąpił błąd. Spróbuj ponownie za chwilę.' 
-      }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Przepraszam, wystąpił błąd. Spróbuj ponownie za chwilę.'
+        }
+      ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage();
+  };
+
+  const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      await sendMessage();
     }
   };
 
@@ -226,12 +252,14 @@ const ChatBox: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="border-t border-gray-100 p-4 bg-white/50">
             <div className="flex gap-3">
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
+                rows={1}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Napisz swoje pytanie..."
-                className="input flex-1"
+                className="textarea-auto flex-1"
                 disabled={isLoading}
               />
               <button

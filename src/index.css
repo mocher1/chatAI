@@ -32,6 +32,10 @@
   .input {
     @apply w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all duration-200;
   }
+
+  .textarea-auto {
+    @apply input resize-none overflow-hidden;
+  }
 }
 
 .prose {
