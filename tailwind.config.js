@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        heading: ['DM Sans', 'system-ui', 'sans-serif'],
+        sans: ['Alata', 'system-ui', 'sans-serif'],
+        heading: ['Alata', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
         tighter: '-0.04em',
