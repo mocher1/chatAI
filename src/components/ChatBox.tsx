@@ -7,6 +7,7 @@ import { Send, Loader2 } from 'lucide-react';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  timestamp: string;
 }
 
 const ChatBox: React.FC = () => {
@@ -28,7 +29,14 @@ const ChatBox: React.FC = () => {
     const saved = localStorage.getItem('chatMessages');
     if (saved) {
       try {
-        setMessages(JSON.parse(saved) as Message[]);
+        const parsed = JSON.parse(saved) as Array<Partial<Message>>;
+        setMessages(
+          parsed.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content ?? '',
+            timestamp: m.timestamp ?? new Date().toISOString(),
+          }))
+        );
       } catch (err) {
         console.error('Failed to parse saved messages', err);
       }
@@ -131,7 +139,10 @@ const ChatBox: React.FC = () => {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: userMessage, timestamp: new Date().toISOString() }
+    ]);
     setIsLoading(true);
 
     try {
@@ -150,13 +161,20 @@ const ChatBox: React.FC = () => {
       const messagesResponse = await getMessages(threadId);
       const assistantMessage = messagesResponse.data[0].content[0].text.value;
       
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: assistantMessage, timestamp: new Date().toISOString() }
+      ]);
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Przepraszam, wystąpił błąd. Spróbuj ponownie za chwilę.' 
-      }]);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Przepraszam, wystąpił błąd. Spróbuj ponownie za chwilę.',
+          timestamp: new Date().toISOString()
+        }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -210,6 +228,9 @@ const ChatBox: React.FC = () => {
                     >
                       {message.content}
                     </ReactMarkdown>
+                    <div className="text-[10px] text-gray-500 mt-1 text-right">
+                      {message.timestamp && new Date(message.timestamp).toLocaleString()}
+                    </div>
                   </div>
                 </div>
               ))
