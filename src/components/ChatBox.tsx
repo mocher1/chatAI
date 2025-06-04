@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import { Send, Loader2 } from 'lucide-react';
 
 interface Message {
@@ -172,7 +174,12 @@ const ChatBox: React.FC = () => {
                         : 'bg-white shadow-lg'
                     }`}
                   >
-                    <ReactMarkdown className="prose prose-sm">
+                    <ReactMarkdown
+                      className="prose prose-sm whitespace-pre-wrap"
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                      linkTarget="_blank"
+                    >
                       {message.content}
                     </ReactMarkdown>
                   </div>
