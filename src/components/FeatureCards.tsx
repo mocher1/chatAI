@@ -3,23 +3,23 @@ import React from 'react';
 const features = [
   {
     icon: '📄',
-    title: 'Twoje CV – od zera lub do poprawy',
-    description: 'Podpowie Ci, co napisać w CV na juniora, specjalistę albo po przerwie w pracy. Bez lania wody.',
+    title: 'CV, które trafia w sedno',
+    description: 'Dowiesz się, jak wyróżnić swoje osiągnięcia i sprawić, by rekruterzy chcieli Cię poznać.',
   },
   {
     icon: '🎤',
-    title: 'Rozmowa rekrutacyjna? Spokojnie',
-    description: 'Przećwiczysz odpowiedzi, zadasz pytania, poznasz zasady gry. CareerGPT wie, o co pytają rekruterzy.',
+    title: 'Rozmowa rekrutacyjna bez stresu',
+    description: 'Ćwicz pytania, dostawaj wskazówki i wchodź na spotkanie przygotowany jak nigdy.',
   },
   {
     icon: '🔎',
-    title: 'Zrozum ogłoszenia o pracę',
-    description: 'Nie wiesz, czy spełniasz wymagania? CareerGPT przetłumaczy HR-owy język na ludzki i doradzi, czy aplikować.',
+    title: 'Ogłoszenia bez tajemnic',
+    description: 'CareerGPT tłumaczy HR-owy żargon i mówi wprost, czy warto wysłać CV.',
   },
   {
     icon: '💡',
-    title: 'Planowanie kariery krok po kroku',
-    description: 'Zmiana branży? Awans? Powrót na rynek? Dostaniesz konkretny plan działania dopasowany do Twojej sytuacji.',
+    title: 'Ścieżka kariery dopasowana do Ciebie',
+    description: 'Otrzymasz plan krok po kroku – niezależnie czy celujesz w awans, zmianę branży czy powrót na rynek.',
   },
 ];
 
