@@ -10,7 +10,7 @@ const Header: React.FC = () => (
         href="#chat"
         className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition"
       >
-        Zadaj pytanie
+        Zacznij teraz
       </a>
     </div>
   </header>
