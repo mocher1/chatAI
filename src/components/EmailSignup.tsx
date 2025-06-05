@@ -10,7 +10,7 @@ const EmailSignup: React.FC = () => {
   };
 
   return (
-    <section className="py-20 px-6 bg-indigo-50 border-t border-indigo-100">
+    <section className="py-12 px-6 bg-indigo-50 border-t border-indigo-100">
       <div className="max-w-2xl mx-auto text-center space-y-6">
         <h2 className="text-2xl font-bold text-gray-900">
           Zapisz się jako pierwszy – otrzymasz dostęp do wersji premium przed premierą. 🚀

@@ -2,7 +2,7 @@ import React from 'react';
 import Typewriter from 'typewriter-effect';
 
 const HeroSection: React.FC = () => (
-  <section className="text-center py-24 px-6 bg-gradient-to-b from-indigo-50 to-white">
+  <section className="text-center py-16 px-6 bg-gradient-to-b from-indigo-50 to-white">
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-snug tracking-tight">
         Masz pytanie o karierę?{' '}

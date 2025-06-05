@@ -225,7 +225,7 @@ const ChatBox: React.FC = () => {
   };
 
   return (
-    <section id="chat" className="py-12 px-6">
+    <section id="chat" className="py-8 px-6">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-4 animate-fade-up">
           Porozmawiaj z CareerGPT
