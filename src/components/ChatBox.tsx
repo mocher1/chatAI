@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Send, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -225,7 +226,14 @@ const ChatBox: React.FC = () => {
   };
 
   return (
-    <section id="chat" className="py-8 px-6">
+    <motion.section
+      id="chat"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      className="py-8 px-6"
+    >
       <div className="max-w-3xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-4 animate-fade-up">
           Porozmawiaj z CareerGPT
@@ -334,7 +342,7 @@ const ChatBox: React.FC = () => {
           </form>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

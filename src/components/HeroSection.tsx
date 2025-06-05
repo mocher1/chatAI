@@ -1,8 +1,15 @@
 import React from 'react';
 import Typewriter from 'typewriter-effect';
+import { motion } from 'framer-motion';
 
 const HeroSection: React.FC = () => (
-  <section className="text-center py-16 px-6 bg-gradient-to-b from-indigo-50 to-white">
+  <motion.section
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5 }}
+    className="text-center py-16 px-6 bg-gradient-to-b from-indigo-50 to-white"
+  >
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-snug tracking-tight">
         Masz pytanie o karierę?{' '}
@@ -29,7 +36,7 @@ const HeroSection: React.FC = () => (
         Zacznij rozmowę
       </a>
     </div>
-  </section>
+  </motion.section>
 );
 
 export default HeroSection;

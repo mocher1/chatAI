@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const features = [
   {
@@ -25,12 +26,22 @@ const features = [
 
 const FeatureCards: React.FC = () => {
   return (
-    <section className="py-12 bg-gray-50">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      className="py-12 bg-gray-50"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
-            <div 
+            <motion.div
               key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
               className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300"
             >
               <div className="flex justify-center items-center mb-4">
@@ -38,11 +49,11 @@ const FeatureCards: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3 text-center">{feature.title}</h3>
               <p className="text-gray-600 text-center">{feature.description}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 
