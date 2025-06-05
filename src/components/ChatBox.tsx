@@ -17,6 +17,15 @@ const ChatBox: React.FC = () => {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  };
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -164,6 +173,9 @@ const ChatBox: React.FC = () => {
 
     const userMessage = input.trim();
     setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '44px';
+    }
     setMessages(prev => [
       ...prev,
       { role: 'user', content: userMessage, timestamp: new Date().toISOString() }
@@ -202,6 +214,13 @@ const ChatBox: React.FC = () => {
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
     }
   };
 
@@ -287,13 +306,18 @@ const ChatBox: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="border-t border-gray-100 p-4 bg-white/50">
             <div className="flex gap-3">
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  adjustTextareaHeight();
+                }}
+                onKeyDown={handleKeyDown}
                 placeholder="Napisz swoje pytanie..."
-                className="input flex-1"
+                className="chat-textarea"
                 disabled={isLoading}
+                rows={1}
               />
               <button
                 type="submit"
