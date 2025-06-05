@@ -33,9 +33,11 @@ const FeatureCards: React.FC = () => {
               key={index}
               className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300"
             >
-              <div className="text-4xl mb-4">{feature.icon}</div>
-              <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
+              <div className="flex justify-center items-center mb-4">
+                <span className="text-4xl">{feature.icon}</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-center">{feature.title}</h3>
+              <p className="text-gray-600 text-center">{feature.description}</p>
             </div>
           ))}
         </div>
