@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, User, Bot } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -255,14 +255,17 @@ const ChatBox: React.FC = () => {
               messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-up`}
+                  className={`flex items-end gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-up`}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
+                  {message.role === 'assistant' && (
+                    <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                  )}
                   <div
-                    className={`relative max-w-[80%] rounded-2xl p-4 ${
+                    className={`relative max-w-[80%] p-4 transition-colors ${
                       message.role === 'user'
-                        ? 'chat-gradient text-white'
-                        : 'bg-white shadow-lg'
+                        ? 'chat-gradient text-white rounded-2xl rounded-br-none hover:brightness-110'
+                        : 'bg-white shadow-lg rounded-2xl rounded-bl-none hover:bg-gray-50'
                     }`}
                   >
                     <button
@@ -288,12 +291,16 @@ const ChatBox: React.FC = () => {
                       {message.timestamp && new Date(message.timestamp).toLocaleString()}
                     </div>
                   </div>
+                  {message.role === 'user' && (
+                    <User className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                  )}
                 </div>
               ))
             )}
             {isLoading && (
-              <div className="flex justify-start animate-fade-in">
-                <div className="bg-white shadow-lg rounded-2xl p-4">
+              <div className="flex items-end gap-2 justify-start animate-fade-in">
+                <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                <div className="bg-white shadow-lg rounded-2xl rounded-bl-none p-4">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
                     <span>CareerGPT pisze...</span>
