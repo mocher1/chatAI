@@ -3,18 +3,18 @@ import React from 'react';
 const steps = [
   {
     icon: '📝',
-    title: 'Zadaj pytanie po swojemu',
-    description: 'Napisz np. "Nie wiem, jak odpowiedzieć na pytanie o swoje słabości" - CareerGPT zrozumie i pomoże.',
+    title: 'Napisz, z czym masz problem',
+    description: 'Opowiedz własnymi słowami, a CareerGPT od razu chwyci sedno.',
   },
   {
     icon: '💡',
-    title: 'Dostań konkretną odpowiedź',
-    description: 'Bez ogólników, bez teorii. Dokładnie to, czego potrzebujesz w Twojej sytuacji.',
+    title: 'Otrzymaj jasną poradę',
+    description: 'Konkretne wskazówki i przykłady dobrane do Twojej sytuacji.',
   },
   {
     icon: '🚀',
-    title: 'Wprowadź plan w życie',
-    description: 'Masz gotową strategię i konkretne kroki do działania. Możesz od razu zacząć.',
+    title: 'Działaj od razu',
+    description: 'Dostajesz listę kroków i możesz natychmiast przejść do działania.',
   },
 ];
 

@@ -4,10 +4,10 @@ const Footer: React.FC = () => (
   <footer className="bg-white border-t border-gray-200 py-8 px-6 text-center text-sm text-gray-500">
     <div className="max-w-4xl mx-auto space-y-4">
       <p>
-        CareerGPT PL © {new Date().getFullYear()} · Wersja MVP · Projekt testowy AI dla rynku pracy
+        CareerGPT PL © {new Date().getFullYear()} · Twoje wsparcie w świadomych decyzjach zawodowych
       </p>
       <p>
-        Stworzony z myślą o polskich kandydatach, którzy chcą podejmować lepsze decyzje zawodowe.
+        Stworzone z myślą o polskich kandydatach, którzy chcą rozwijać karierę szybciej.
       </p>
       <p>
         <span className="underline hover:text-indigo-600 cursor-pointer">Polityka prywatności</span> ·{' '}

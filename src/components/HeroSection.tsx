@@ -20,13 +20,13 @@ const HeroSection: React.FC = () => (
         </span>
       </h1>
       <p className="text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed">
-        Nie musisz znać się na AI. Wystarczy, że zapytasz. CareerGPT to Twój osobisty doradca zawodowy, który rozumie stres rekrutacji, polskie realia i nie używa HR-owego bełkotu.
+        Zapomnij o domysłach. CareerGPT tłumaczy rekrutacyjne zawiłości na prosty język i podpowiada konkretnie, jak zrobić kolejny krok w pracy.
       </p>
       <a
         href="#chat"
         className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-full text-lg font-medium shadow hover:bg-indigo-700 hover:shadow-lg transition transform hover:scale-105"
       >
-        Zacznij rozmowę
+        Zapytaj już teraz
       </a>
     </div>
   </section>
