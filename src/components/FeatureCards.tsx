@@ -57,3 +57,5 @@ const FeatureCards: React.FC = () => {
     </section>
   );
 };
+
+export default FeatureCards

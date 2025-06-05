@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Send, Loader2, User, Bot } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -225,89 +226,131 @@ const ChatBox: React.FC = () => {
   };
 
   return (
-    <section id="chat" className="py-8 px-6">
+    <motion.section 
+      id="chat" 
+      className="py-8 px-6"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.8 }}
+    >
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-4 animate-fade-up">
+        <motion.h2 
+          className="text-3xl font-bold text-center mb-4"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
           Porozmawiaj z CareerGPT
-        </h2>
+        </motion.h2>
         <div className="text-right mb-4">
-          <button
+          <motion.button
             type="button"
             onClick={handleNewConversation}
             className="text-sm font-medium text-primary-600 hover:text-primary-700 transition"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             Nowa rozmowa
-          </button>
+          </motion.button>
         </div>
         
-        <div className="glass-card rounded-2xl overflow-hidden shadow-glow">
+        <motion.div 
+          className="glass-card rounded-2xl overflow-hidden shadow-glow"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
           <div className="h-[70vh] md:h-[500px] overflow-y-auto p-6 space-y-6">
-            {messages.length === 0 ? (
-              <div className="text-center text-gray-500 mt-8 animate-fade-in">
-                <p className="text-lg mb-4">
-                  Zadaj pytanie o karierę, CV lub rozmowę kwalifikacyjną
-                </p>
-                <p className="text-sm text-gray-400">
-                  Na przykład: "Jak napisać CV na stanowisko junior developera?"
-                </p>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex items-end gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-up`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
+            <AnimatePresence>
+              {messages.length === 0 ? (
+                <motion.div 
+                  className="text-center text-gray-500 mt-8"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
                 >
-                  {message.role === 'assistant' && (
-                    <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
-                  )}
-                  <div
-                    className={`relative max-w-[80%] p-4 transition-colors ${
-                      message.role === 'user'
-                        ? 'chat-gradient text-white rounded-2xl rounded-br-none hover:brightness-110'
-                        : 'bg-white shadow-lg rounded-2xl rounded-bl-none hover:bg-gray-50'
-                    }`}
+                  <p className="text-lg mb-4">
+                    Zadaj pytanie o karierę, CV lub rozmowę kwalifikacyjną
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Na przykład: "Jak napisać CV na stanowisko junior developera?"
+                  </p>
+                </motion.div>
+              ) : (
+                messages.map((message, index) => (
+                  <motion.div
+                    key={index}
+                    className={`flex items-end gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.5 }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(index, message.content)}
-                      className="absolute top-2 right-2 text-xs text-gray-300 hover:text-gray-500"
-                    >
-                      Kopiuj
-                    </button>
-                    {copiedIndex === index && (
-                      <span className="absolute -top-5 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded">
-                        Skopiowano!
-                      </span>
+                    {message.role === 'assistant' && (
+                      <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
                     )}
-                    <ReactMarkdown
-                      className="prose prose-sm whitespace-pre-wrap"
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeHighlight]}
+                    <motion.div
+                      className={`relative max-w-[80%] p-4 transition-colors ${
+                        message.role === 'user'
+                          ? 'chat-gradient text-white rounded-2xl rounded-br-none hover:brightness-110'
+                          : 'bg-white shadow-lg rounded-2xl rounded-bl-none hover:bg-gray-50'
+                      }`}
+                      whileHover={{ scale: 1.01 }}
                     >
-                      {message.content}
-                    </ReactMarkdown>
-                    <div className="text-[10px] text-gray-500 mt-1 text-right">
-                      {message.timestamp && new Date(message.timestamp).toLocaleString()}
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(index, message.content)}
+                        className="absolute top-2 right-2 text-xs text-gray-300 hover:text-gray-500"
+                      >
+                        Kopiuj
+                      </button>
+                      {copiedIndex === index && (
+                        <motion.span 
+                          className="absolute -top-5 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded"
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -5 }}
+                        >
+                          Skopiowano!
+                        </motion.span>
+                      )}
+                      <ReactMarkdown
+                        className="prose prose-sm whitespace-pre-wrap"
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                      <div className="text-[10px] text-gray-500 mt-1 text-right">
+                        {message.timestamp && new Date(message.timestamp).toLocaleString()}
+                      </div>
+                    </motion.div>
+                    {message.role === 'user' && (
+                      <User className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                    )}
+                  </motion.div>
+                ))
+              )}
+              {isLoading && (
+                <motion.div 
+                  className="flex items-end gap-2 justify-start"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                  <div className="bg-white shadow-lg rounded-2xl rounded-bl-none p-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
+                      <span>CareerGPT pisze...</span>
                     </div>
                   </div>
-                  {message.role === 'user' && (
-                    <User className="w-6 h-6 text-primary-600 flex-shrink-0" />
-                  )}
-                </div>
-              ))
-            )}
-            {isLoading && (
-              <div className="flex items-end gap-2 justify-start animate-fade-in">
-                <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
-                <div className="bg-white shadow-lg rounded-2xl rounded-bl-none p-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
-                    <span>CareerGPT pisze...</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div ref={chatEndRef} />
           </div>
 
@@ -326,23 +369,27 @@ const ChatBox: React.FC = () => {
                 disabled={isLoading}
                 rows={1}
               />
-              <button
+              <motion.button
                 type="submit"
                 disabled={isLoading || !input.trim()}
                 className="btn-primary"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <Send className="w-5 h-5" />
                 )}
-              </button>
+              </motion.button>
             </div>
           </form>
-        </div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 
 export default ChatBox;
+
+export default ChatBox
