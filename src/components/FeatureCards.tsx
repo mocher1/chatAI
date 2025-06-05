@@ -1,49 +1,51 @@
 import React from 'react';
+import { FileText, Mic, Search, Lightbulb } from 'lucide-react';
 
-const features = [
+interface Feature {
+  Icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+}
+
+const features: Feature[] = [
   {
-    icon: '📄',
-    title: 'Twoje CV – od zera lub do poprawy',
-    description: 'Podpowie Ci, co napisać w CV na juniora, specjalistę albo po przerwie w pracy. Bez lania wody.',
+    Icon: FileText,
+    title: 'CV, które przyciąga spojrzenia',
+    description: 'Stwórz dokument, który od razu zwróci uwagę rekruterów i podkreśli Twoje atuty.',
   },
   {
-    icon: '🎤',
-    title: 'Rozmowa rekrutacyjna? Spokojnie',
-    description: 'Przećwiczysz odpowiedzi, zadasz pytania, poznasz zasady gry. CareerGPT wie, o co pytają rekruterzy.',
+    Icon: Mic,
+    title: 'Pewny głos na rozmowie',
+    description: 'Przećwicz odpowiedzi i poznaj techniki, które zrobią wrażenie na każdym rekruterze.',
   },
   {
-    icon: '🔎',
-    title: 'Zrozum ogłoszenia o pracę',
-    description: 'Nie wiesz, czy spełniasz wymagania? CareerGPT przetłumaczy HR-owy język na ludzki i doradzi, czy aplikować.',
+    Icon: Search,
+    title: 'Analiza ofert w kilka sekund',
+    description: 'Dowiedz się, czy dana propozycja naprawdę pasuje do Twoich oczekiwań i możliwości.',
   },
   {
-    icon: '💡',
-    title: 'Planowanie kariery krok po kroku',
-    description: 'Zmiana branży? Awans? Powrót na rynek? Dostaniesz konkretny plan działania dopasowany do Twojej sytuacji.',
+    Icon: Lightbulb,
+    title: 'Kierunek rozwoju',
+    description: 'Zobacz dokładną, klarowną ścieżkę kariery prowadzącą do wymarzonego stanowiska.',
   },
 ];
 
-const FeatureCards: React.FC = () => {
-  return (
-    <section className="py-12 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <div 
-              key={index}
-              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300"
-            >
-              <div className="flex justify-center items-center mb-4">
-                <span className="text-4xl">{feature.icon}</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-center">{feature.title}</h3>
-              <p className="text-gray-600 text-center">{feature.description}</p>
+const FeatureCards: React.FC = () => (
+  <section className="py-12 bg-gray-50">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        {features.map(({ Icon, title, description }, index) => (
+          <div key={index} className="card p-6 text-center">
+            <div className="flex justify-center mb-4">
+              <Icon className="w-10 h-10 text-primary-600" />
             </div>
-          ))}
-        </div>
+            <h3 className="text-xl font-semibold mb-2">{title}</h3>
+            <p className="text-gray-600">{description}</p>
+          </div>
+        ))}
       </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);
 
 export default FeatureCards;
