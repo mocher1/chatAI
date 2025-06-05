@@ -27,10 +27,12 @@ const HowItWorks: React.FC = () => (
       </p>
       <div className="grid gap-10 md:grid-cols-3">
         {steps.map((step, i) => (
-          <div key={i} className="text-left bg-gray-50 p-6 rounded-xl shadow-sm hover:shadow-md transition">
-            <div className="text-4xl mb-4">{step.icon}</div>
-            <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-            <p className="text-gray-600 text-base">{step.description}</p>
+          <div key={i} className="text-center bg-gray-50 p-6 rounded-xl shadow-sm hover:shadow-md transition">
+            <div className="flex justify-center items-center mb-4">
+              <span className="text-4xl">{step.icon}</span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-center">{step.title}</h3>
+            <p className="text-gray-600 text-base text-center">{step.description}</p>
           </div>
         ))}
       </div>
@@ -38,4 +40,4 @@ const HowItWorks: React.FC = () => (
   </section>
 );
 
-export default HowItWorks
+export default HowItWorks;
