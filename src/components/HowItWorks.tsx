@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const steps = [
   {
@@ -19,7 +20,13 @@ const steps = [
 ];
 
 const HowItWorks: React.FC = () => (
-  <section className="py-16 px-6 bg-white">
+  <motion.section
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5 }}
+    className="py-16 px-6 bg-white"
+  >
     <div className="max-w-6xl mx-auto text-center">
       <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">Jak to działa?</h2>
       <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
@@ -37,7 +44,7 @@ const HowItWorks: React.FC = () => (
         ))}
       </div>
     </div>
-  </section>
+  </motion.section>
 );
 
 export default HowItWorks;

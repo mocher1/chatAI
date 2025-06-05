@@ -1,7 +1,14 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const ForWhom: React.FC = () => (
-  <section className="bg-white py-16 px-6">
+  <motion.section
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.5 }}
+    className="bg-white py-16 px-6"
+  >
     <div className="max-w-4xl mx-auto">
       <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 text-center">
         To Ty?
@@ -43,7 +50,7 @@ const ForWhom: React.FC = () => (
         </div>
       </div>
     </div>
-  </section>
+  </motion.section>
 );
 
 export default ForWhom
