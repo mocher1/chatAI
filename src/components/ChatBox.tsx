@@ -391,5 +391,3 @@ const ChatBox: React.FC = () => {
 };
 
 export default ChatBox;
-
-export default ChatBox
