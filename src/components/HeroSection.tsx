@@ -18,7 +18,7 @@ const HeroSection: React.FC = () => (
               strings: ['CareerGPT da Ci odpowiedź - sprawdzoną i skuteczną!'],
               autoStart: true,
               loop: false,
-              delay: 50,
+              delay: 150,
               cursor: '|',
               deleteSpeed: 999999999
             }}
