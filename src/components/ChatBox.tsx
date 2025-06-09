@@ -321,26 +321,137 @@ const ChatBox: React.FC = () => {
                       )}
                       <ReactMarkdown
                         className={`prose prose-sm whitespace-pre-wrap ${
-                          message.role === 'user' ? 'prose-invert' : ''
+                          message.role === 'user' ? 'prose-invert' : 'prose-enhanced'
                         }`}
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeHighlight]}
                         components={{
-                          blockquote: ({ children }) => (
-                            <blockquote className={`border-l-4 pl-4 my-4 italic ${
+                          // Lepsze formatowanie list punktowanych
+                          ul: ({ children }) => (
+                            <ul className={`space-y-2 my-4 ${
                               message.role === 'user' 
-                                ? 'border-white/50 text-white/90' 
-                                : 'border-purple-300 bg-purple-50 text-purple-800 rounded-r-lg py-2'
+                                ? 'text-white/95' 
+                                : 'text-gray-700'
                             }`}>
                               {children}
+                            </ul>
+                          ),
+                          // Lepsze formatowanie list numerowanych
+                          ol: ({ children }) => (
+                            <ol className={`space-y-2 my-4 ${
+                              message.role === 'user' 
+                                ? 'text-white/95' 
+                                : 'text-gray-700'
+                            }`}>
+                              {children}
+                            </ol>
+                          ),
+                          // Stylizowane elementy list
+                          li: ({ children }) => (
+                            <li className={`flex items-start gap-2 ${
+                              message.role === 'user' 
+                                ? 'text-white/95' 
+                                : 'text-gray-700'
+                            }`}>
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
+                                message.role === 'user' 
+                                  ? 'bg-white/70' 
+                                  : 'bg-purple-400'
+                              }`}></span>
+                              <span className="flex-1">{children}</span>
+                            </li>
+                          ),
+                          // Wyróżnianie pogrubienia
+                          strong: ({ children }) => (
+                            <strong className={`font-bold ${
+                              message.role === 'user' 
+                                ? 'text-white' 
+                                : 'text-purple-700 bg-purple-50 px-1 py-0.5 rounded'
+                            }`}>
+                              {children}
+                            </strong>
+                          ),
+                          // Wyróżnianie kursywy
+                          em: ({ children }) => (
+                            <em className={`italic ${
+                              message.role === 'user' 
+                                ? 'text-white/90' 
+                                : 'text-blue-600'
+                            }`}>
+                              {children}
+                            </em>
+                          ),
+                          // Lepsze formatowanie cytatów
+                          blockquote: ({ children }) => (
+                            <blockquote className={`border-l-4 pl-4 py-3 my-4 italic rounded-r-lg ${
+                              message.role === 'user' 
+                                ? 'border-white/50 bg-white/10 text-white/90' 
+                                : 'border-purple-400 bg-gradient-to-r from-purple-50 to-blue-50 text-purple-800 shadow-sm'
+                            }`}>
+                              <div className="flex items-start gap-2">
+                                <span className={`text-2xl leading-none ${
+                                  message.role === 'user' ? 'text-white/70' : 'text-purple-400'
+                                }`}>
+                                  "
+                                </span>
+                                <div className="flex-1">{children}</div>
+                              </div>
                             </blockquote>
+                          ),
+                          // Lepsze formatowanie kodu
+                          code: ({ children }) => (
+                            <code className={`px-2 py-1 rounded text-sm font-mono ${
+                              message.role === 'user' 
+                                ? 'bg-white/20 text-white' 
+                                : 'bg-gray-100 text-purple-700 border border-purple-200'
+                            }`}>
+                              {children}
+                            </code>
+                          ),
+                          // Lepsze formatowanie nagłówków
+                          h1: ({ children }) => (
+                            <h1 className={`text-xl font-bold mb-3 mt-4 ${
+                              message.role === 'user' 
+                                ? 'text-white' 
+                                : 'text-purple-700 border-b border-purple-200 pb-2'
+                            }`}>
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className={`text-lg font-bold mb-2 mt-3 ${
+                              message.role === 'user' 
+                                ? 'text-white' 
+                                : 'text-purple-600'
+                            }`}>
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className={`text-base font-semibold mb-2 mt-3 ${
+                              message.role === 'user' 
+                                ? 'text-white' 
+                                : 'text-purple-600'
+                            }`}>
+                              {children}
+                            </h3>
+                          ),
+                          // Lepsze formatowanie paragrafów
+                          p: ({ children }) => (
+                            <p className={`mb-3 leading-relaxed ${
+                              message.role === 'user' 
+                                ? 'text-white/95' 
+                                : 'text-gray-700'
+                            }`}>
+                              {children}
+                            </p>
                           ),
                         }}
                       >
                         {message.content}
                       </ReactMarkdown>
                       {message.role === 'assistant' && (
-                        <div className="text-[10px] text-gray-500 mt-1 text-right">
+                        <div className="text-[10px] text-gray-500 mt-2 text-right border-t border-gray-100 pt-2">
                           {message.timestamp && new Date(message.timestamp).toLocaleString()}
                         </div>
                       )}
