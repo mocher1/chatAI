@@ -12,7 +12,7 @@ const HeroSection: React.FC = () => (
     >
       <h1 className="text-4xl md:text-5xl font-extrabold text-gray-9000 leading-snug tracking-tight">
         Masz pytanie o karierę?{' '}
-        <span className="text-blue-900">
+        <span className="text-indigo-500">
           <Typewriter
             options={{
               strings: ['CareerGPT zna odpowiedź – po polsku i po ludzku.'],
