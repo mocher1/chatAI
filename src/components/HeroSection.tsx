@@ -15,7 +15,7 @@ const HeroSection: React.FC = () => (
         <span className="text-indigo-600">
           <Typewriter
             options={{
-              strings: ['CareerGPT da odpowiedź - sprawdzoną i skuteczną!'],
+              strings: ['CareerGPT da Ci odpowiedź - sprawdzoną i skuteczną!'],
               autoStart: true,
               loop: false,
               delay: 50,
