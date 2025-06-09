@@ -10,7 +10,7 @@ const HeroSection: React.FC = () => (
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
     >
-      <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-snug tracking-tight">
+      <h1 className="text-4xl md:text-5xl font-extrabold text-gray-50 leading-snug tracking-tight">
         Masz pytanie o karierę?{' '}
         <span className="text-gray-900">
           <Typewriter
