@@ -228,7 +228,7 @@ const ChatBox: React.FC = () => {
   return (
     <motion.section 
       id="chat" 
-      className="py-8 px-6"
+      className="py-8 px-6 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true }}
@@ -236,7 +236,7 @@ const ChatBox: React.FC = () => {
     >
       <div className="max-w-3xl mx-auto">
         <motion.h2 
-          className="text-3xl font-bold text-center mb-4"
+          className="text-3xl font-bold text-center mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -248,7 +248,7 @@ const ChatBox: React.FC = () => {
           <motion.button
             type="button"
             onClick={handleNewConversation}
-            className="text-sm font-medium text-primary-600 hover:text-primary-700 transition"
+            className="text-sm font-medium text-purple-600 hover:text-purple-700 transition"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -257,7 +257,7 @@ const ChatBox: React.FC = () => {
         </div>
         
         <motion.div 
-          className="glass-card rounded-2xl overflow-hidden shadow-glow"
+          className="glass-card rounded-2xl overflow-hidden shadow-glow border border-purple-200/30"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -290,23 +290,25 @@ const ChatBox: React.FC = () => {
                     transition={{ delay: index * 0.1, duration: 0.5 }}
                   >
                     {message.role === 'assistant' && (
-                      <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                      <Bot className="w-6 h-6 text-purple-600 flex-shrink-0" />
                     )}
                     <motion.div
                       className={`relative max-w-[80%] p-4 transition-colors ${
                         message.role === 'user'
-                          ? 'chat-gradient text-white rounded-2xl rounded-br-none hover:brightness-110'
-                          : 'bg-white shadow-lg rounded-2xl rounded-bl-none hover:bg-gray-50'
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl rounded-br-none hover:from-purple-700 hover:to-blue-700'
+                          : 'bg-white shadow-lg rounded-2xl rounded-bl-none hover:bg-gray-50 border border-purple-100'
                       }`}
                       whileHover={{ scale: 1.01 }}
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(index, message.content)}
-                        className="absolute top-2 right-2 text-xs text-gray-300 hover:text-gray-500"
-                      >
-                        Kopiuj
-                      </button>
+                      {message.role === 'assistant' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(index, message.content)}
+                          className="absolute top-2 right-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          Kopiuj
+                        </button>
+                      )}
                       {copiedIndex === index && (
                         <motion.span 
                           className="absolute -top-5 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded"
@@ -318,18 +320,33 @@ const ChatBox: React.FC = () => {
                         </motion.span>
                       )}
                       <ReactMarkdown
-                        className="prose prose-sm whitespace-pre-wrap"
+                        className={`prose prose-sm whitespace-pre-wrap ${
+                          message.role === 'user' ? 'prose-invert' : ''
+                        }`}
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeHighlight]}
+                        components={{
+                          blockquote: ({ children }) => (
+                            <blockquote className={`border-l-4 pl-4 my-4 italic ${
+                              message.role === 'user' 
+                                ? 'border-white/50 text-white/90' 
+                                : 'border-purple-300 bg-purple-50 text-purple-800 rounded-r-lg py-2'
+                            }`}>
+                              {children}
+                            </blockquote>
+                          ),
+                        }}
                       >
                         {message.content}
                       </ReactMarkdown>
-                      <div className="text-[10px] text-gray-500 mt-1 text-right">
-                        {message.timestamp && new Date(message.timestamp).toLocaleString()}
-                      </div>
+                      {message.role === 'assistant' && (
+                        <div className="text-[10px] text-gray-500 mt-1 text-right">
+                          {message.timestamp && new Date(message.timestamp).toLocaleString()}
+                        </div>
+                      )}
                     </motion.div>
                     {message.role === 'user' && (
-                      <User className="w-6 h-6 text-primary-600 flex-shrink-0" />
+                      <User className="w-6 h-6 text-purple-600 flex-shrink-0" />
                     )}
                   </motion.div>
                 ))
@@ -341,10 +358,10 @@ const ChatBox: React.FC = () => {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <Bot className="w-6 h-6 text-primary-600 flex-shrink-0" />
-                  <div className="bg-white shadow-lg rounded-2xl rounded-bl-none p-4">
+                  <Bot className="w-6 h-6 text-purple-600 flex-shrink-0" />
+                  <div className="bg-white shadow-lg rounded-2xl rounded-bl-none p-4 border border-purple-100">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
+                      <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
                       <span>CareerGPT pisze...</span>
                     </div>
                   </div>
@@ -354,7 +371,7 @@ const ChatBox: React.FC = () => {
             <div ref={chatEndRef} />
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t border-gray-100 p-4 bg-white/50">
+          <form onSubmit={handleSubmit} className="border-t border-purple-100 p-4 bg-gradient-to-r from-purple-50/50 to-blue-50/50">
             <div className="flex gap-3">
               <textarea
                 ref={textareaRef}
@@ -365,14 +382,14 @@ const ChatBox: React.FC = () => {
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Napisz swoje pytanie..."
-                className="chat-textarea"
+                className="chat-textarea border-purple-200 focus:ring-purple-500 focus:border-purple-500"
                 disabled={isLoading}
                 rows={1}
               />
               <motion.button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="btn-primary"
+                className="btn-primary bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg shadow-purple-500/25"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >

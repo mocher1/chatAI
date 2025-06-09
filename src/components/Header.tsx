@@ -1,19 +1,30 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 const Header: React.FC = () => (
-  <header className="w-full px-6 py-4 bg-white border-b border-gray-200">
+  <motion.header 
+    className="w-full px-6 py-4 bg-white/95 backdrop-blur-sm border-b border-purple-200 sticky top-0 z-50"
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6 }}
+  >
     <div className="max-w-7xl mx-auto flex items-center justify-between">
-      <div className="text-xl font-bold text-indigo-600 tracking-tight">
+      <motion.div 
+        className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent tracking-tight"
+        whileHover={{ scale: 1.05 }}
+      >
         CareerGPT<span className="text-gray-900"> PL</span>
-      </div>
-      <a
+      </motion.div>
+      <motion.a
         href="#chat"
-        className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition"
+        className="text-sm font-medium bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent hover:from-purple-700 hover:to-blue-700 transition-all"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
         Zadaj pytanie
-      </a>
+      </motion.a>
     </div>
-  </header>
+  </motion.header>
 );
 
 export default Header;

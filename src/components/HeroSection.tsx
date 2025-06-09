@@ -3,7 +3,7 @@ import Typewriter from 'typewriter-effect';
 import { motion } from 'framer-motion';
 
 const HeroSection: React.FC = () => (
-  <section className="text-center py-16 px-6 bg-gradient-to-b from-indigo-50 to-white">
+  <section className="text-center py-16 px-6 bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100">
     <motion.div 
       className="max-w-4xl mx-auto space-y-6"
       initial={{ opacity: 0, y: 20 }}
@@ -12,7 +12,7 @@ const HeroSection: React.FC = () => (
     >
       <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-snug tracking-tight">
         Masz pytanie o karierę?{' '}
-        <span className="text-indigo-600">
+        <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
           <Typewriter
             options={{
               strings: ['CareerGPT zna odpowiedź – po polsku i po ludzku.'],
@@ -35,7 +35,7 @@ const HeroSection: React.FC = () => (
       </motion.p>
       <motion.a
         href="#chat"
-        className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-full text-lg font-medium shadow hover:bg-indigo-700 hover:shadow-lg transition transform hover:scale-105"
+        className="inline-block bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-purple-500/25 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl hover:shadow-purple-500/30 transition-all transform hover:scale-105"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.6, duration: 0.5 }}
@@ -48,4 +48,4 @@ const HeroSection: React.FC = () => (
   </section>
 );
 
-export default HeroSection
+export default HeroSection;
