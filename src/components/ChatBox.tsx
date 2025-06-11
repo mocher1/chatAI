@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { Send, Loader2, User, Bot, AlertCircle, Settings } from 'lucide-react';
+import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
@@ -108,6 +108,18 @@ const ChatBox: React.FC = () => {
           throw new Error('Edge Functions nie są wdrożone. Sprawdź konfigurację Supabase.');
         } else if (response.status === 401) {
           throw new Error('Błąd autoryzacji. Sprawdź klucz API Supabase.');
+        } else if (response.status === 500) {
+          // Parse error response to get more details
+          let errorMessage = 'Błąd konfiguracji serwera.';
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.error === 'Server configuration error') {
+              errorMessage = 'Zmienne środowiskowe nie są skonfigurowane w Supabase. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID w panelu Supabase.';
+            }
+          } catch (e) {
+            // Keep default error message
+          }
+          throw new Error(errorMessage);
         } else {
           throw new Error(`Błąd serwera (${response.status}): ${errorText}`);
         }
@@ -188,7 +200,17 @@ const ChatBox: React.FC = () => {
         } else if (response.status === 401) {
           throw new Error('Błąd autoryzacji. Sprawdź klucze API.');
         } else if (response.status === 500) {
-          throw new Error('Błąd serwera. Sprawdź konfigurację OpenAI API w Supabase.');
+          // Parse error response to get more details
+          let errorMessage = 'Błąd serwera.';
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.error === 'Server configuration error') {
+              errorMessage = 'Zmienne środowiskowe nie są skonfigurowane w Supabase. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID w panelu Supabase.';
+            }
+          } catch (e) {
+            errorMessage = 'Błąd serwera. Sprawdź konfigurację OpenAI API w Supabase.';
+          }
+          throw new Error(errorMessage);
         } else {
           throw new Error(`Błąd komunikacji (${response.status}): ${errorText}`);
         }
@@ -229,6 +251,8 @@ const ChatBox: React.FC = () => {
 
   // Render error state
   if (error && !threadId) {
+    const isConfigError = error.includes('zmienne środowiskowe') || error.includes('OPENAI_API_KEY') || error.includes('ASSISTANT_ID');
+    
     return (
       <motion.section 
         id="chat" 
@@ -284,11 +308,41 @@ const ChatBox: React.FC = () => {
               
               <div className="text-sm text-gray-600 bg-white/50 rounded-lg p-4 border border-gray-200">
                 <p className="font-medium mb-2">Kroki rozwiązywania problemu:</p>
-                <ol className="text-left space-y-1 list-decimal list-inside">
+                <ol className="text-left space-y-2 list-decimal list-inside">
                   <li>Kliknij przycisk "Connect to Supabase" w prawym górnym rogu</li>
-                  <li>Skonfiguruj zmienne środowiskowe w panelu Supabase</li>
-                  <li>Upewnij się, że Edge Functions są wdrożone</li>
-                  <li>Sprawdź klucze API OpenAI w konfiguracji Supabase</li>
+                  {isConfigError && (
+                    <>
+                      <li>W panelu Supabase przejdź do "Edge Functions" → "Settings"</li>
+                      <li>Dodaj zmienne środowiskowe:
+                        <ul className="ml-4 mt-1 space-y-1 list-disc list-inside text-xs">
+                          <li><code className="bg-gray-100 px-1 rounded">OPENAI_API_KEY</code> - Twój klucz OpenAI API</li>
+                          <li><code className="bg-gray-100 px-1 rounded">ASSISTANT_ID</code> - ID asystenta OpenAI</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <a 
+                          href="https://platform.openai.com/api-keys" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 underline inline-flex items-center gap-1"
+                        >
+                          Uzyskaj klucz OpenAI API <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </li>
+                      <li>
+                        <a 
+                          href="https://platform.openai.com/assistants" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 underline inline-flex items-center gap-1"
+                        >
+                          Utwórz asystenta OpenAI <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </li>
+                    </>
+                  )}
+                  <li>Poczekaj 1-2 minuty na propagację zmian</li>
+                  <li>Odśwież stronę i spróbuj ponownie</li>
                 </ol>
               </div>
             </div>

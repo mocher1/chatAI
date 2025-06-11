@@ -16,9 +16,25 @@ Aplikacja używa Supabase Edge Functions jako backend proxy, co zapewnia:
 
 1. Utwórz projekt w [Supabase](https://supabase.com)
 2. Kliknij przycisk "Connect to Supabase" w prawym górnym rogu aplikacji
-3. Skonfiguruj zmienne środowiskowe w panelu Supabase:
-   - `OPENAI_API_KEY` - Twój klucz API OpenAI
-   - `ASSISTANT_ID` - ID Twojego asystenta OpenAI
+3. **KRYTYCZNE**: Skonfiguruj zmienne środowiskowe dla Edge Functions:
+   
+   **Sposób 1 - Przez Dashboard Supabase:**
+   - Przejdź do swojego projektu Supabase
+   - Kliknij "Edge Functions" w menu bocznym
+   - Kliknij "Settings" lub "Environment Variables"
+   - Dodaj następujące zmienne:
+     - `OPENAI_API_KEY` - Twój klucz API OpenAI (zaczyna się od sk-)
+     - `ASSISTANT_ID` - ID Twojego asystenta OpenAI (zaczyna się od asst_)
+
+   **Sposób 2 - Przez CLI Supabase (jeśli używasz lokalnie):**
+   ```bash
+   supabase secrets set OPENAI_API_KEY=your_openai_api_key_here
+   supabase secrets set ASSISTANT_ID=your_assistant_id_here
+   ```
+
+4. **Jak uzyskać klucze:**
+   - **OPENAI_API_KEY**: Przejdź do [OpenAI API Keys](https://platform.openai.com/api-keys), zaloguj się i utwórz nowy klucz API
+   - **ASSISTANT_ID**: Przejdź do [OpenAI Assistants](https://platform.openai.com/assistants), utwórz nowego asystenta lub skopiuj ID istniejącego
 
 ### 2. Lokalne uruchomienie
 
@@ -36,6 +52,31 @@ Aplikacja używa Supabase Edge Functions jako backend proxy, co zapewnia:
    ```bash
    npm run dev
    ```
+
+## Rozwiązywanie problemów
+
+### Błąd "Server configuration error"
+
+Jeśli widzisz błąd `Server configuration error`, oznacza to, że zmienne środowiskowe nie są skonfigurowane w Supabase:
+
+1. **Sprawdź konfigurację w Supabase Dashboard:**
+   - Przejdź do swojego projektu Supabase
+   - Kliknij "Edge Functions" → "Settings"
+   - Upewnij się, że `OPENAI_API_KEY` i `ASSISTANT_ID` są ustawione
+
+2. **Sprawdź poprawność kluczy:**
+   - `OPENAI_API_KEY` powinien zaczynać się od `sk-`
+   - `ASSISTANT_ID` powinien zaczynać się od `asst_`
+
+3. **Po dodaniu zmiennych:**
+   - Poczekaj 1-2 minuty na propagację zmian
+   - Odśwież stronę aplikacji
+   - Spróbuj ponownie rozpocząć rozmowę
+
+### Inne częste problemy
+
+- **404 Error**: Edge Functions nie są wdrożone - sprawdź czy funkcje są aktywne w panelu Supabase
+- **401 Error**: Nieprawidłowy klucz Supabase - sprawdź `.env` i upewnij się, że `VITE_SUPABASE_URL` i `VITE_SUPABASE_ANON_KEY` są poprawne
 
 ## Architektura bezpieczeństwa
 
