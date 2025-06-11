@@ -20,6 +20,10 @@ const ChatBox: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // URL do naszych Edge Functions
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
+
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -75,11 +79,9 @@ const ChatBox: React.FC = () => {
 
   const createThread = async () => {
     try {
-      const response = await fetch('https://api.openai.com/v1/threads', {
+      const response = await fetch(`${FUNCTIONS_URL}/create-thread`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2',
           'Content-Type': 'application/json'
         }
       });
@@ -87,67 +89,10 @@ const ChatBox: React.FC = () => {
       if (!response.ok) throw new Error('Failed to create thread');
       
       const data = await response.json();
-      setThreadId(data.id);
+      setThreadId(data.threadId);
     } catch (error) {
       console.error('Error creating thread:', error);
     }
-  };
-
-  const addMessage = async (threadId: string, content: string) => {
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ role: 'user', content })
-    });
-    
-    if (!response.ok) throw new Error('Failed to add message');
-    return response.json();
-  };
-
-  const createRun = async (threadId: string) => {
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        assistant_id: import.meta.env.VITE_ASSISTANT_ID,
-        instructions: "Jesteś CareerGPT - przyjaznym doradcą zawodowym, który specjalizuje się w polskim rynku pracy. Pomagasz w pisaniu CV, przygotowaniu do rozmów kwalifikacyjnych i planowaniu kariery. Odpowiadasz po polsku, używasz prostego języka i unikasz żargonu HR. Twoje odpowiedzi są konkretne i praktyczne."
-      })
-    });
-    
-    if (!response.ok) throw new Error('Failed to create run');
-    return response.json();
-  };
-
-  const checkRunStatus = async (threadId: string, runId: string) => {
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
-      }
-    });
-    
-    if (!response.ok) throw new Error('Failed to check run status');
-    return response.json();
-  };
-
-  const getMessages = async (threadId: string) => {
-    const response = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?limit=1`, {
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v2'
-      }
-    });
-    
-    if (!response.ok) throw new Error('Failed to get messages');
-    return response.json();
   };
 
   const handleNewConversation = () => {
@@ -184,24 +129,27 @@ const ChatBox: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await addMessage(threadId, userMessage);
-      const run = await createRun(threadId);
+      // Wysyłamy zapytanie do naszej Edge Function
+      const response = await fetch(`${FUNCTIONS_URL}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          threadId,
+          message: userMessage
+        })
+      });
 
-      let runStatus = await checkRunStatus(threadId, run.id);
-      while (runStatus.status !== 'completed') {
-        if (runStatus.status === 'failed' || runStatus.status === 'cancelled') {
-          throw new Error(`Run ${runStatus.status}`);
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        runStatus = await checkRunStatus(threadId, run.id);
+      if (!response.ok) {
+        throw new Error('Failed to get response from chat function');
       }
 
-      const messagesResponse = await getMessages(threadId);
-      const assistantMessage = messagesResponse.data[0].content[0].text.value;
+      const data = await response.json();
       
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: assistantMessage, timestamp: new Date().toISOString() }
+        { role: 'assistant', content: data.assistantMessage, timestamp: new Date().toISOString() }
       ]);
     } catch (error) {
       console.error('Error:', error);
