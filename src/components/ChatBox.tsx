@@ -66,6 +66,7 @@ const ChatBox: React.FC = () => {
     } else {
       createThread();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -116,7 +117,7 @@ const ChatBox: React.FC = () => {
             if (errorData.error === 'Server configuration error') {
               errorMessage = 'Zmienne środowiskowe nie są skonfigurowane w Supabase. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID w panelu Supabase.';
             }
-          } catch (e) {
+          } catch {
             // Keep default error message
           }
           throw new Error(errorMessage);
@@ -207,7 +208,7 @@ const ChatBox: React.FC = () => {
             if (errorData.error === 'Server configuration error') {
               errorMessage = 'Zmienne środowiskowe nie są skonfigurowane w Supabase. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID w panelu Supabase.';
             }
-          } catch (e) {
+          } catch {
             errorMessage = 'Błąd serwera. Sprawdź konfigurację OpenAI API w Supabase.';
           }
           throw new Error(errorMessage);
