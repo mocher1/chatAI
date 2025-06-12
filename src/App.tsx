@@ -5,7 +5,6 @@ import ForWhom from './components/ForWhom';
 import FeatureCards from './components/FeatureCards';
 import HowItWorks from './components/HowItWorks';
 import ChatBox from './components/ChatBox';
-import EmailSignup from './components/EmailSignup';
 import Footer from './components/Footer';
 
 function App() {
@@ -18,7 +17,6 @@ function App() {
         <FeatureCards />
         <HowItWorks />
         <ChatBox />
-        <EmailSignup />
       </main>
       <Footer />
     </div>
