@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const ForWhom: React.FC = () => (
-  <section className="bg-gradient-to-br from-white to-purple-50 py-16 px-6">
+  <section id="for-whom" className="bg-gradient-to-br from-white to-purple-50 py-16 px-6">
     <motion.div 
       className="max-w-4xl mx-auto"
       initial={{ opacity: 0, y: 20 }}

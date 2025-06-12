@@ -23,7 +23,7 @@ const steps = [
 ];
 
 const HowItWorks: React.FC = () => (
-  <section className="py-16 px-6 bg-gradient-to-br from-white to-indigo-50">
+  <section id="how-it-works" className="py-16 px-6 bg-gradient-to-br from-white to-indigo-50">
     <motion.div 
       className="max-w-6xl mx-auto text-center"
       initial={{ opacity: 0, y: 20 }}
