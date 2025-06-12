@@ -1,15 +1,18 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
-const ForWhom: React.FC = () => (
-  <section id="for-whom" className="bg-gradient-to-br from-white to-purple-50 py-16 px-6">
-    <motion.div 
-      className="max-w-4xl mx-auto"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.8 }}
-    >
+const ForWhom: React.FC = () => {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <section id="for-whom" className="bg-gradient-to-br from-white to-purple-50 py-16 px-6">
+      <motion.div
+        className="max-w-4xl mx-auto"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: reduceMotion ? 0 : 0.8 }}
+      >
       <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 text-center bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
         To Ty?
       </h2>
@@ -19,7 +22,7 @@ const ForWhom: React.FC = () => (
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.2, duration: 0.6 }}
+        transition={{ delay: reduceMotion ? 0 : 0.2, duration: reduceMotion ? 0 : 0.6 }}
           whileHover={{ scale: 1.02 }}
         >
           <h3 className="text-xl font-semibold text-gray-800 text-center">Pierwsza praca na horyzoncie?</h3>
@@ -43,7 +46,7 @@ const ForWhom: React.FC = () => (
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+        transition={{ delay: reduceMotion ? 0 : 0.4, duration: reduceMotion ? 0 : 0.6 }}
           whileHover={{ scale: 1.02 }}
         >
           <h3 className="text-xl font-semibold text-gray-800 text-center">Planujesz zmianę pracy?</h3>
@@ -65,6 +68,7 @@ const ForWhom: React.FC = () => (
       </div>
     </motion.div>
   </section>
-);
+  );
+};
 
 export default ForWhom;

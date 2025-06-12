@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const steps = [
   {
@@ -22,15 +22,18 @@ const steps = [
   },
 ];
 
-const HowItWorks: React.FC = () => (
-  <section id="how-it-works" className="py-16 px-6 bg-gradient-to-br from-white to-indigo-50">
-    <motion.div 
-      className="max-w-6xl mx-auto text-center"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.8 }}
-    >
+const HowItWorks: React.FC = () => {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <section id="how-it-works" className="py-16 px-6 bg-gradient-to-br from-white to-indigo-50">
+      <motion.div
+        className="max-w-6xl mx-auto text-center"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: reduceMotion ? 0 : 0.8 }}
+      >
       <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
         Jak to działa?
       </h2>
@@ -45,7 +48,7 @@ const HowItWorks: React.FC = () => (
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.2, duration: 0.6 }}
+            transition={{ delay: reduceMotion ? 0 : i * 0.2, duration: reduceMotion ? 0 : 0.6 }}
             whileHover={{ y: -5, scale: 1.02 }}
           >
             <div className={`flex justify-center items-center mb-6 w-20 h-20 mx-auto rounded-full bg-gradient-to-r ${step.color} shadow-lg`}>
@@ -57,7 +60,8 @@ const HowItWorks: React.FC = () => (
         ))}
       </div>
     </motion.div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default HowItWorks;

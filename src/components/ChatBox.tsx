@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,6 +19,7 @@ const ChatBox: React.FC = () => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const reduceMotion = useReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -260,14 +261,14 @@ const ChatBox: React.FC = () => {
         className="py-8 px-6 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: reduceMotion ? 0 : 0.8 }}
       >
         <div className="max-w-3xl mx-auto">
           <motion.h2 
             className="text-3xl font-bold text-center mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: reduceMotion ? 0 : 0.5 }}
           >
             Porozmawiaj z CareerGPT
           </motion.h2>
@@ -276,7 +277,7 @@ const ChatBox: React.FC = () => {
             className="glass-card rounded-2xl p-8 text-center border border-red-200/30 bg-red-50/50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: reduceMotion ? 0 : 0.5, delay: reduceMotion ? 0 : 0.2 }}
           >
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-red-700 mb-3">
@@ -360,7 +361,7 @@ const ChatBox: React.FC = () => {
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.8 }}
+      transition={{ duration: reduceMotion ? 0 : 0.8 }}
     >
       <div className="max-w-3xl mx-auto">
         <motion.h2 
@@ -368,7 +369,7 @@ const ChatBox: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: reduceMotion ? 0 : 0.5 }}
         >
           Porozmawiaj z CareerGPT
         </motion.h2>
@@ -389,7 +390,7 @@ const ChatBox: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: reduceMotion ? 0 : 0.5, delay: reduceMotion ? 0 : 0.2 }}
         >
           <div className="h-[70vh] md:h-[500px] overflow-y-auto p-6 space-y-6">
             {isInitializing ? (
@@ -397,7 +398,7 @@ const ChatBox: React.FC = () => {
                 className="text-center text-gray-500 mt-8"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: reduceMotion ? 0 : 0.5 }}
               >
                 <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
                 <p className="text-lg mb-2">Inicjalizuję CareerGPT...</p>
@@ -413,7 +414,7 @@ const ChatBox: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.5 }}
                   >
                     <p className="text-lg mb-4">
                       Zadaj pytanie o karierę, CV lub rozmowę kwalifikacyjną
@@ -429,7 +430,7 @@ const ChatBox: React.FC = () => {
                       className={`flex items-end gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.5 }}
+                      transition={{ delay: reduceMotion ? 0 : index * 0.1, duration: reduceMotion ? 0 : 0.5 }}
                     >
                       {message.role === 'assistant' && (
                         <Bot className="w-6 h-6 text-purple-600 flex-shrink-0" />
@@ -662,3 +663,4 @@ const ChatBox: React.FC = () => {
 };
 
 export default ChatBox;
+
