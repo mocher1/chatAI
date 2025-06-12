@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const features = [
   {
@@ -29,6 +29,7 @@ const features = [
 ];
 
 const FeatureCards: React.FC = () => {
+  const reduceMotion = useReducedMotion();
   return (
     <section id="features" className="py-12 bg-gradient-to-br from-gray-50 to-blue-50">
       <motion.div 
@@ -36,7 +37,7 @@ const FeatureCards: React.FC = () => {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: reduceMotion ? 0 : 0.8 }}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
@@ -46,7 +47,7 @@ const FeatureCards: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.2, duration: 0.5 }}
+              transition={{ delay: reduceMotion ? 0 : index * 0.2, duration: reduceMotion ? 0 : 0.5 }}
               whileHover={{ y: -8, scale: 1.02 }}
             >
               <div className={`flex justify-center items-center mb-4 w-16 h-16 mx-auto rounded-full bg-gradient-to-r ${feature.color} shadow-lg`}>

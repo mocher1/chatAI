@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const EmailSignup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +18,7 @@ const EmailSignup: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: reduceMotion ? 0 : 0.8 }}
       >
         <h2 className="text-2xl font-bold text-gray-900">
           Zapisz się jako pierwszy – otrzymasz dostęp do wersji premium przed premierą. 🚀
@@ -29,7 +30,7 @@ const EmailSignup: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.6 }}
+            transition={{ delay: reduceMotion ? 0 : 0.2, duration: reduceMotion ? 0 : 0.6 }}
           >
             <input
               type="email"
@@ -53,7 +54,7 @@ const EmailSignup: React.FC = () => {
             className="text-green-700 font-medium text-lg"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: reduceMotion ? 0 : 0.5 }}
           >
             Dziękujemy! Powiadomimy Cię jako pierwszego. 💌
           </motion.p>

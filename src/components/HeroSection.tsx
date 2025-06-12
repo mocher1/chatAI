@@ -1,6 +1,6 @@
 import React from 'react';
 import Typewriter from 'typewriter-effect';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const HeroSection: React.FC = () => {
   const scrollToChat = () => {
@@ -15,6 +15,7 @@ const HeroSection: React.FC = () => {
       });
     }
   };
+  const reduceMotion = useReducedMotion();
 
   return (
     <section id="hero" className="text-center py-16 px-6 bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100">
@@ -22,7 +23,7 @@ const HeroSection: React.FC = () => {
         className="max-w-4xl mx-auto space-y-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: reduceMotion ? 0 : 0.8 }}
       >
         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-snug tracking-tight">
           Masz pytanie o karierę?{' '}
@@ -43,7 +44,7 @@ const HeroSection: React.FC = () => {
           className="text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.8 }}
+          transition={{ delay: reduceMotion ? 0 : 0.3, duration: reduceMotion ? 0 : 0.8 }}
         >
           Zapomnij o domysłach. CareerGPT tłumaczy rekrutacyjne zawiłości na prosty język i podpowiada konkretnie, jak zrobić kolejny krok w pracy.
         </motion.p>
@@ -52,7 +53,7 @@ const HeroSection: React.FC = () => {
           className="inline-block bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-lg shadow-purple-500/25 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl hover:shadow-purple-500/30 transition-all transform hover:scale-105"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+          transition={{ delay: reduceMotion ? 0 : 0.6, duration: reduceMotion ? 0 : 0.5 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

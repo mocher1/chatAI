@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,7 +47,7 @@ const Header: React.FC = () => {
       }`}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: reduceMotion ? 0 : 0.6 }}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
@@ -102,7 +103,7 @@ const Header: React.FC = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: reduceMotion ? 0 : 0.3 }}
           >
             <nav className="px-6 py-4 space-y-4">
               {navigationItems.map((item, index) => (
@@ -112,7 +113,7 @@ const Header: React.FC = () => {
                   className="block w-full text-left text-gray-700 hover:text-purple-600 transition-colors py-2 border-b border-gray-100 last:border-b-0"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: reduceMotion ? 0 : index * 0.1 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   {item.label}
@@ -123,7 +124,7 @@ const Header: React.FC = () => {
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3 rounded-full text-sm font-medium hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg shadow-purple-500/25 mt-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: reduceMotion ? 0 : 0.4 }}
                 whileTap={{ scale: 0.95 }}
               >
                 Zadaj pytanie
