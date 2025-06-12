@@ -22,6 +22,7 @@ const ChatBox: React.FC = () => {
   const reduceMotion = useReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialScroll = useRef(true);
 
   // URL do naszych Edge Functions
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -40,6 +41,10 @@ const ChatBox: React.FC = () => {
   };
 
   useEffect(() => {
+    if (initialScroll.current) {
+      initialScroll.current = false;
+      return;
+    }
     scrollToBottom();
   }, [messages]);
 
