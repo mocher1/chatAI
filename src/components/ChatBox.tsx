@@ -22,7 +22,6 @@ const ChatBox: React.FC = () => {
   const reduceMotion = useReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const initialScroll = useRef(true);
 
   // URL do naszych Edge Functions
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -34,13 +33,8 @@ const ChatBox: React.FC = () => {
       textarea.style.height = 'auto';
       textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
-  };
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
-  
 
   useEffect(() => {
     const saved = localStorage.getItem('chatMessages');

@@ -59,6 +59,7 @@
 /* Ulepszone style dla prose w czacie */
 .prose-enhanced {
   @apply max-w-none;
+  overflow-wrap: anywhere;
 }
 
 .prose-enhanced p {
@@ -116,6 +117,7 @@
 /* Style dla wiadomości użytkownika */
 .prose-invert {
   @apply max-w-none;
+  overflow-wrap: anywhere;
 }
 
 .prose-invert p {
