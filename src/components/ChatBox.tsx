@@ -40,13 +40,7 @@ const ChatBox: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    if (initialScroll.current) {
-      initialScroll.current = false;
-      return;
-    }
-    scrollToBottom();
-  }, [messages]);
+  
 
   useEffect(() => {
     const saved = localStorage.getItem('chatMessages');
