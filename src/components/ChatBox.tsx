@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink } from 'lucide-react';
+import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface Message {
@@ -27,13 +27,22 @@ const ChatBox: React.FC = () => {
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
   const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 
+  // Function to clean metadata from assistant responses
+  const cleanAssistantResponse = (content: string): string => {
+    // Remove file metadata like [24:14†Goldman-Recruitment...] and replace with clean source reference
+    return content.replace(/\[\d+:\d+†([^\]]+)\]/g, (match, filename) => {
+      // Extract just the filename without path and extension for cleaner display
+      const cleanFilename = filename.split('/').pop()?.replace(/\.[^/.]+$/, '') || filename;
+      return `— źródło: ${cleanFilename}`;
+    });
+  };
+
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
-
   };
 
   useEffect(() => {
@@ -74,6 +83,10 @@ const ChatBox: React.FC = () => {
       localStorage.removeItem('threadId');
     }
   }, [threadId]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   const createThread = async () => {
     setIsInitializing(true);
@@ -150,7 +163,7 @@ const ChatBox: React.FC = () => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 1000);
+      setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
       console.error('Copy failed', err);
     }
@@ -217,9 +230,12 @@ const ChatBox: React.FC = () => {
         throw new Error('Nie otrzymano odpowiedzi od asystenta.');
       }
       
+      // Clean the assistant response before adding to messages
+      const cleanedMessage = cleanAssistantResponse(data.assistantMessage);
+      
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: data.assistantMessage, timestamp: new Date().toISOString() }
+        { role: 'assistant', content: cleanedMessage, timestamp: new Date().toISOString() }
       ]);
     } catch (error) {
       console.error('Error:', error);
@@ -356,7 +372,7 @@ const ChatBox: React.FC = () => {
       viewport={{ once: true }}
       transition={{ duration: reduceMotion ? 0 : 0.8 }}
     >
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <motion.h2 
           className="text-3xl font-bold text-center mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
           initial={{ opacity: 0, y: 20 }}
@@ -420,196 +436,181 @@ const ChatBox: React.FC = () => {
                   messages.map((message, index) => (
                     <motion.div
                       key={index}
-                      className={`flex items-end gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      initial={{ opacity: 0, y: 20 }}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: reduceMotion ? 0 : index * 0.1, duration: reduceMotion ? 0 : 0.5 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ 
+                        delay: reduceMotion ? 0 : index * 0.05, 
+                        duration: reduceMotion ? 0 : 0.3 
+                      }}
                     >
-                      {message.role === 'assistant' && (
-                        <Bot className="w-6 h-6 text-purple-600 flex-shrink-0" />
-                      )}
-                      <motion.div
-                        className={`relative max-w-[80%] p-4 transition-colors ${
-                          message.role === 'user'
-                            ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl rounded-br-none hover:from-purple-700 hover:to-blue-700'
-                            : 'bg-white shadow-lg rounded-2xl rounded-bl-none hover:bg-gray-50 border border-purple-100'
-                        }`}
-                        whileHover={{ scale: 1.01 }}
-                      >
+                      <div className="flex gap-3 items-start max-w-[85%]">
                         {message.role === 'assistant' && (
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(index, message.content)}
-                            className="absolute top-2 right-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            Kopiuj
-                          </button>
-                        )}
-                        {copiedIndex === index && (
-                          <motion.span 
-                            className="absolute -top-5 right-2 bg-gray-800 text-white text-xs px-2 py-1 rounded"
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                          >
-                            Skopiowano!
-                          </motion.span>
-                        )}
-                        <ReactMarkdown
-                          className={`prose prose-sm whitespace-pre-wrap ${
-                            message.role === 'user' ? 'prose-invert' : 'prose-enhanced'
-                          }`}
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeHighlight]}
-                          components={{
-                            // Lepsze formatowanie list punktowanych
-                            ul: ({ children }) => (
-                              <ul className={`space-y-2 my-4 ${
-                                message.role === 'user' 
-                                  ? 'text-white/95' 
-                                  : 'text-gray-700'
-                              }`}>
-                                {children}
-                              </ul>
-                            ),
-                            // Lepsze formatowanie list numerowanych
-                            ol: ({ children }) => (
-                              <ol className={`space-y-2 my-4 ${
-                                message.role === 'user' 
-                                  ? 'text-white/95' 
-                                  : 'text-gray-700'
-                              }`}>
-                                {children}
-                              </ol>
-                            ),
-                            // Stylizowane elementy list
-                            li: ({ children }) => (
-                              <li className={`flex items-start gap-2 ${
-                                message.role === 'user' 
-                                  ? 'text-white/95' 
-                                  : 'text-gray-700'
-                              }`}>
-                                <span className={`inline-block w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
-                                  message.role === 'user' 
-                                    ? 'bg-white/70' 
-                                    : 'bg-purple-400'
-                                }`}></span>
-                                <span className="flex-1">{children}</span>
-                              </li>
-                            ),
-                            // Wyróżnianie pogrubienia
-                            strong: ({ children }) => (
-                              <strong className={`font-bold ${
-                                message.role === 'user' 
-                                  ? 'text-white' 
-                                  : 'text-purple-700 bg-purple-50 px-1 py-0.5 rounded'
-                              }`}>
-                                {children}
-                              </strong>
-                            ),
-                            // Wyróżnianie kursywy
-                            em: ({ children }) => (
-                              <em className={`italic ${
-                                message.role === 'user' 
-                                  ? 'text-white/90' 
-                                  : 'text-blue-600'
-                              }`}>
-                                {children}
-                              </em>
-                            ),
-                            // Lepsze formatowanie cytatów
-                            blockquote: ({ children }) => (
-                              <blockquote className={`border-l-4 pl-4 py-3 my-4 italic rounded-r-lg ${
-                                message.role === 'user' 
-                                  ? 'border-white/50 bg-white/10 text-white/90' 
-                                  : 'border-purple-400 bg-gradient-to-r from-purple-50 to-blue-50 text-purple-800 shadow-sm'
-                              }`}>
-                                <div className="flex items-start gap-2">
-                                  <span className={`text-2xl leading-none ${
-                                    message.role === 'user' ? 'text-white/70' : 'text-purple-400'
-                                  }`}>
-                                    "
-                                  </span>
-                                  <div className="flex-1">{children}</div>
-                                </div>
-                              </blockquote>
-                            ),
-                            // Lepsze formatowanie kodu
-                            code: ({ children }) => (
-                              <code className={`px-2 py-1 rounded text-sm font-mono ${
-                                message.role === 'user' 
-                                  ? 'bg-white/20 text-white' 
-                                  : 'bg-gray-100 text-purple-700 border border-purple-200'
-                              }`}>
-                                {children}
-                              </code>
-                            ),
-                            // Lepsze formatowanie nagłówków
-                            h1: ({ children }) => (
-                              <h1 className={`text-xl font-bold mb-3 mt-4 ${
-                                message.role === 'user' 
-                                  ? 'text-white' 
-                                  : 'text-purple-700 border-b border-purple-200 pb-2'
-                              }`}>
-                                {children}
-                              </h1>
-                            ),
-                            h2: ({ children }) => (
-                              <h2 className={`text-lg font-bold mb-2 mt-3 ${
-                                message.role === 'user' 
-                                  ? 'text-white' 
-                                  : 'text-purple-600'
-                              }`}>
-                                {children}
-                              </h2>
-                            ),
-                            h3: ({ children }) => (
-                              <h3 className={`text-base font-semibold mb-2 mt-3 ${
-                                message.role === 'user' 
-                                  ? 'text-white' 
-                                  : 'text-purple-600'
-                              }`}>
-                                {children}
-                              </h3>
-                            ),
-                            // Lepsze formatowanie paragrafów
-                            p: ({ children }) => (
-                              <p className={`mb-3 leading-relaxed ${
-                                message.role === 'user' 
-                                  ? 'text-white/95' 
-                                  : 'text-gray-700'
-                              }`}>
-                                {children}
-                              </p>
-                            ),
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                        {message.role === 'assistant' && (
-                          <div className="text-[10px] text-gray-500 mt-2 text-right border-t border-gray-100 pt-2">
-                            {message.timestamp && new Date(message.timestamp).toLocaleString()}
+                          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                            <Bot className="w-4 h-4 text-white" />
                           </div>
                         )}
-                      </motion.div>
-                      {message.role === 'user' && (
-                        <User className="w-6 h-6 text-purple-600 flex-shrink-0" />
-                      )}
+                        
+                        <motion.div
+                          className={`relative rounded-2xl px-4 py-3 shadow-sm ${
+                            message.role === 'user'
+                              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                              : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
+                          }`}
+                          whileHover={{ scale: 1.01 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {message.role === 'assistant' && (
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(index, message.content)}
+                              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 transition-colors rounded"
+                              title="Kopiuj wiadomość"
+                            >
+                              {copiedIndex === index ? (
+                                <Check className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                          
+                          <ReactMarkdown
+                            className={`prose prose-sm max-w-none ${
+                              message.role === 'user' 
+                                ? 'prose-invert text-white/95' 
+                                : 'prose-indigo text-gray-800'
+                            }`}
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeHighlight]}
+                            components={{
+                              // Enhanced list styling
+                              ul: ({ children }) => (
+                                <ul className="space-y-1 my-3 pl-0">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="space-y-1 my-3 pl-0">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="flex items-start gap-2 text-sm leading-relaxed">
+                                  <span className={`inline-block w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
+                                    message.role === 'user' 
+                                      ? 'bg-white/70' 
+                                      : 'bg-indigo-400'
+                                  }`}></span>
+                                  <span className="flex-1">{children}</span>
+                                </li>
+                              ),
+                              // Enhanced typography
+                              p: ({ children }) => (
+                                <p className="mb-3 text-sm leading-relaxed">
+                                  {children}
+                                </p>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className={`font-semibold ${
+                                  message.role === 'user' 
+                                    ? 'text-white' 
+                                    : 'text-indigo-700'
+                                }`}>
+                                  {children}
+                                </strong>
+                              ),
+                              em: ({ children }) => (
+                                <em className={`italic ${
+                                  message.role === 'user' 
+                                    ? 'text-white/90' 
+                                    : 'text-indigo-600'
+                                }`}>
+                                  {children}
+                                </em>
+                              ),
+                              code: ({ children }) => (
+                                <code className={`px-2 py-1 rounded text-xs font-mono ${
+                                  message.role === 'user' 
+                                    ? 'bg-white/20 text-white' 
+                                    : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                }`}>
+                                  {children}
+                                </code>
+                              ),
+                              blockquote: ({ children }) => (
+                                <blockquote className={`border-l-4 pl-4 py-2 my-3 italic ${
+                                  message.role === 'user' 
+                                    ? 'border-white/50 text-white/90' 
+                                    : 'border-indigo-300 bg-indigo-50/50 text-indigo-800'
+                                }`}>
+                                  {children}
+                                </blockquote>
+                              ),
+                              h1: ({ children }) => (
+                                <h1 className={`text-lg font-bold mb-2 mt-3 ${
+                                  message.role === 'user' ? 'text-white' : 'text-indigo-700'
+                                }`}>
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({ children }) => (
+                                <h2 className={`text-base font-bold mb-2 mt-3 ${
+                                  message.role === 'user' ? 'text-white' : 'text-indigo-600'
+                                }`}>
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className={`text-sm font-semibold mb-2 mt-2 ${
+                                  message.role === 'user' ? 'text-white' : 'text-indigo-600'
+                                }`}>
+                                  {children}
+                                </h3>
+                              ),
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                          
+                          {message.role === 'assistant' && (
+                            <div className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-100">
+                              {new Date(message.timestamp).toLocaleString('pl-PL', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: '2-digit',
+                                month: '2-digit'
+                              })}
+                            </div>
+                          )}
+                        </motion.div>
+                        
+                        {message.role === 'user' && (
+                          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
                   ))
                 )}
                 {isLoading && (
                   <motion.div 
-                    className="flex items-end gap-2 justify-start"
+                    className="flex justify-start"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <Bot className="w-6 h-6 text-purple-600 flex-shrink-0" />
-                    <div className="bg-white shadow-lg rounded-2xl rounded-bl-none p-4 border border-purple-100">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
-                        <span>CareerGPT pisze...</span>
+                    <div className="flex gap-3 items-start max-w-[85%]">
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                          <span>CareerGPT pisze...</span>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -656,4 +657,3 @@ const ChatBox: React.FC = () => {
 };
 
 export default ChatBox;
-
