@@ -85,59 +85,25 @@ class AnalyticsService {
     }
   }
 
-  // Aktualizacja sesji użytkownika - fixed to handle response properly
+  // Aktualizacja sesji użytkownika - using proper upsert with ON CONFLICT
   private async updateUserSession(): Promise<void> {
     try {
       const sessionData = {
         session_id: this.sessionId,
         user_agent: navigator.userAgent,
         last_activity_at: new Date().toISOString(),
+        started_at: new Date().toISOString(),
+        total_interactions: 1,
       };
 
-      // Attempt to update the existing session using return=representation to check if rows were updated
-      const updateResponse = await fetch(`${this.supabaseUrl}/rest/v1/user_sessions?session_id=eq.${this.sessionId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          last_activity_at: sessionData.last_activity_at,
-        }),
+      // Use upsert with proper ON CONFLICT handling
+      await this.makeRequest('user_sessions', {
+        method: 'POST',
+        body: JSON.stringify(sessionData),
         headers: {
-          'apikey': this.supabaseKey,
-          'Authorization': `Bearer ${this.supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation', // Changed from 'return=minimal'
+          'Prefer': 'resolution=merge-duplicates',
         },
       });
-
-      if (!updateResponse.ok) {
-        console.error('Failed to update user session:', updateResponse.status, await updateResponse.text());
-        // Fallback to creating a new session if update failed
-        await this.makeRequest('user_sessions', {
-          method: 'POST',
-          body: JSON.stringify({
-            session_id: sessionData.session_id,
-            user_agent: sessionData.user_agent,
-            last_activity_at: sessionData.last_activity_at,
-            started_at: new Date().toISOString(),
-            total_interactions: 1,
-          }),
-        });
-        return;
-      }
-
-      const updatedData = await updateResponse.json();
-      // If updatedData.length is 0, no row matched the filter, so the session didn't exist
-      if (updatedData.length === 0) {
-        await this.makeRequest('user_sessions', {
-          method: 'POST',
-          body: JSON.stringify({
-            session_id: sessionData.session_id,
-            user_agent: sessionData.user_agent,
-            last_activity_at: sessionData.last_activity_at,
-            started_at: new Date().toISOString(),
-            total_interactions: 1,
-          }),
-        });
-      }
     } catch (error) {
       console.error('Failed to update user session:', error);
     }
