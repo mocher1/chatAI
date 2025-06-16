@@ -14,6 +14,7 @@ interface Message {
   isError?: boolean;
   isRetryable?: boolean;
   interactionId?: string;
+  dbId?: string; // UUID from database
   responseTimeMs?: number;
 }
 
@@ -142,6 +143,7 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
             isError: m.isError ?? false,
             isRetryable: m.isRetryable ?? false,
             interactionId: m.interactionId,
+            dbId: m.dbId,
             responseTimeMs: m.responseTimeMs,
           }))
         );
@@ -279,9 +281,9 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
     }
   };
 
-  const handleSatisfactionRating = async (interactionId: string, rating: number) => {
+  const handleSatisfactionRating = async (dbId: string, rating: number) => {
     try {
-      await analyticsService.logUserSatisfaction(interactionId, rating);
+      await analyticsService.logUserSatisfaction(dbId, rating);
       setShowSatisfactionRating(null);
     } catch (error) {
       console.error('Failed to log satisfaction rating:', error);
@@ -368,6 +370,22 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
         isRetryable = true;
       }
       
+      // Log interaction to analytics and get the database ID
+      let dbId: string | null = null;
+      try {
+        dbId = await analyticsService.logChatInteraction({
+          threadId,
+          userMessage,
+          assistantMessage: finalMessage,
+          responseTimeMs: responseTime,
+          success: !isError,
+          errorMessage: isError ? 'Fallback response used' : undefined,
+          promptVariantId: currentPromptVariant?.id,
+        });
+      } catch (analyticsError) {
+        console.error('Failed to log analytics:', analyticsError);
+      }
+
       setMessages(prev => [
         ...prev,
         { 
@@ -377,30 +395,16 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
           isError,
           isRetryable,
           interactionId,
+          dbId: dbId || undefined,
           responseTimeMs: responseTime
         }
       ]);
 
-      // Log interaction to analytics
-      try {
-        await analyticsService.logChatInteraction({
-          threadId,
-          userMessage,
-          assistantMessage: finalMessage,
-          responseTimeMs: responseTime,
-          success: !isError,
-          errorMessage: isError ? 'Fallback response used' : undefined,
-          promptVariantId: currentPromptVariant?.id,
-        });
-
-        // Show satisfaction rating for successful responses
-        if (!isError) {
-          setTimeout(() => {
-            setShowSatisfactionRating(interactionId);
-          }, 2000);
-        }
-      } catch (analyticsError) {
-        console.error('Failed to log analytics:', analyticsError);
+      // Show satisfaction rating for successful responses
+      if (!isError && dbId) {
+        setTimeout(() => {
+          setShowSatisfactionRating(dbId);
+        }, 2000);
       }
 
       setRetryCount(0); // Reset retry count on success
@@ -410,23 +414,10 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
       const responseTime = Date.now() - startTime;
       const interactionId = `interaction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Add error message with retry option
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: `Przepraszam, wystąpił błąd: ${errorMessage}\n\n${createFallbackResponse(userMessage)}`,
-          timestamp: new Date().toISOString(),
-          isError: true,
-          isRetryable: retryCount < 3,
-          interactionId,
-          responseTimeMs: responseTime
-        }
-      ]);
-
       // Log failed interaction
+      let dbId: string | null = null;
       try {
-        await analyticsService.logChatInteraction({
+        dbId = await analyticsService.logChatInteraction({
           threadId: threadId || '',
           userMessage,
           assistantMessage: '',
@@ -438,6 +429,21 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
       } catch (analyticsError) {
         console.error('Failed to log failed interaction:', analyticsError);
       }
+      
+      // Add error message with retry option
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `Przepraszam, wystąpił błąd: ${errorMessage}\n\n${createFallbackResponse(userMessage)}`,
+          timestamp: new Date().toISOString(),
+          isError: true,
+          isRetryable: retryCount < 3,
+          interactionId,
+          dbId: dbId || undefined,
+          responseTimeMs: responseTime
+        }
+      ]);
 
       setRetryCount(prev => prev + 1);
     } finally {
@@ -852,13 +858,13 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
                               </span>
                               
                               {/* Satisfaction rating */}
-                              {showSatisfactionRating === message.interactionId && !message.isError && (
+                              {showSatisfactionRating === message.dbId && !message.isError && message.dbId && (
                                 <div className="flex items-center gap-1 ml-4">
                                   <span className="text-xs text-gray-500 mr-1">Oceń:</span>
                                   {[1, 2, 3, 4, 5].map((rating) => (
                                     <button
                                       key={rating}
-                                      onClick={() => message.interactionId && handleSatisfactionRating(message.interactionId, rating)}
+                                      onClick={() => handleSatisfactionRating(message.dbId!, rating)}
                                       className="text-gray-300 hover:text-yellow-400 transition-colors"
                                       title={`Oceń ${rating}/5`}
                                     >

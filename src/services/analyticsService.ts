@@ -47,23 +47,30 @@ class AnalyticsService {
     return response.json();
   }
 
-  // Logowanie interakcji z chatem
-  async logChatInteraction(interaction: Omit<ChatInteraction, 'sessionId'>): Promise<void> {
+  // Logowanie interakcji z chatem - zwraca UUID z bazy danych
+  async logChatInteraction(interaction: Omit<ChatInteraction, 'sessionId'>): Promise<string | null> {
     try {
       const interactionData: ChatInteraction = {
         ...interaction,
         sessionId: this.sessionId,
       };
 
-      await this.makeRequest('chat_interactions', {
+      const result = await this.makeRequest('chat_interactions', {
         method: 'POST',
         body: JSON.stringify(interactionData),
+        headers: {
+          'Prefer': 'return=representation',
+        },
       });
 
       // Aktualizuj sesję użytkownika
       await this.updateUserSession();
+
+      // Zwróć UUID z bazy danych
+      return result && result.length > 0 ? result[0].id : null;
     } catch (error) {
       console.error('Failed to log chat interaction:', error);
+      return null;
     }
   }
 
@@ -88,14 +95,16 @@ class AnalyticsService {
         },
       });
 
-      // Jeśli sesja nie istnieje, utwórz nową
+      // Jeśli sesja nie istnieje, utwórz nową z prawidłowymi nazwami kolumn
       if (!updateResponse) {
         await this.makeRequest('user_sessions', {
           method: 'POST',
           body: JSON.stringify({
-            ...sessionData,
-            startedAt: new Date().toISOString(),
-            totalInteractions: 1,
+            session_id: sessionData.sessionId,
+            user_agent: sessionData.userAgent,
+            last_activity_at: sessionData.lastActivityAt,
+            started_at: new Date().toISOString(),
+            total_interactions: 1,
           }),
         });
       }
