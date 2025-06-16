@@ -26,10 +26,9 @@ const ChatBox: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Updated API URLs for Vercel deployment
-  const API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? '' // Use relative URLs in production
-    : 'http://localhost:3000'; // Local development
+  // URL do naszych Edge Functions
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 
   // Function to clean metadata from assistant responses
   const cleanAssistantResponse = (content: string): string => {
@@ -172,12 +171,20 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
   const createThread = async () => {
     setIsInitializing(true);
     setError(null);
+    
+    // Check if Supabase URL is configured
+    if (!SUPABASE_URL || SUPABASE_URL === 'your_supabase_project_url') {
+      setError('Supabase nie jest skonfigurowany. Kliknij przycisk "Connect to Supabase" w prawym górnym rogu.');
+      setIsInitializing(false);
+      return;
+    }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/create-thread`, {
+      const response = await fetch(`${FUNCTIONS_URL}/create-thread`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         }
       });
       
@@ -186,14 +193,16 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
         console.error('Thread creation failed:', response.status, errorText);
         
         if (response.status === 404) {
-          throw new Error('API endpoints nie są dostępne. Sprawdź konfigurację serwera.');
+          throw new Error('Edge Functions nie są wdrożone. Sprawdź konfigurację Supabase.');
+        } else if (response.status === 401) {
+          throw new Error('Błąd autoryzacji. Sprawdź klucz API Supabase.');
         } else if (response.status === 500) {
           // Parse error response to get more details
           let errorMessage = 'Błąd konfiguracji serwera.';
           try {
             const errorData = JSON.parse(errorText);
             if (errorData.error === 'Server configuration error') {
-              errorMessage = 'Zmienne środowiskowe nie są skonfigurowane. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID.';
+              errorMessage = 'Zmienne środowiskowe nie są skonfigurowane w Supabase. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID w panelu Supabase.';
             }
           } catch {
             // Keep default error message
@@ -266,11 +275,12 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
     try {
       console.log('Sending message to assistant:', { threadId, message: userMessage });
 
-      // Send request to our API endpoint
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      // Wysyłamy zapytanie do naszej Edge Function
+      const response = await fetch(`${FUNCTIONS_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
           threadId,
@@ -285,17 +295,19 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
         console.error('Chat request failed:', response.status, errorText);
         
         if (response.status === 404) {
-          throw new Error('API endpoints nie są dostępne. Sprawdź konfigurację serwera.');
+          throw new Error('Edge Functions nie są dostępne. Sprawdź konfigurację Supabase.');
+        } else if (response.status === 401) {
+          throw new Error('Błąd autoryzacji. Sprawdź klucze API.');
         } else if (response.status === 500) {
           // Parse error response to get more details
           let errorMessage = 'Błąd serwera.';
           try {
             const errorData = JSON.parse(errorText);
             if (errorData.error === 'Server configuration error') {
-              errorMessage = 'Zmienne środowiskowe nie są skonfigurowane. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID.';
+              errorMessage = 'Zmienne środowiskowe nie są skonfigurowane w Supabase. Sprawdź konfigurację OPENAI_API_KEY i ASSISTANT_ID w panelu Supabase.';
             }
           } catch {
-            errorMessage = 'Błąd serwera. Sprawdź konfigurację OpenAI API.';
+            errorMessage = 'Błąd serwera. Sprawdź konfigurację OpenAI API w Supabase.';
           }
           throw new Error(errorMessage);
         } else {
@@ -438,10 +450,11 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
               <div className="text-sm text-gray-600 bg-white/50 rounded-lg p-4 border border-gray-200">
                 <p className="font-medium mb-2">Kroki rozwiązywania problemu:</p>
                 <ol className="text-left space-y-2 list-decimal list-inside">
-                  <li>Wdróż aplikację na Vercel zamiast Netlify</li>
+                  <li>Kliknij przycisk "Connect to Supabase" w prawym górnym rogu</li>
                   {isConfigError && (
                     <>
-                      <li>Dodaj zmienne środowiskowe w Vercel:
+                      <li>W panelu Supabase przejdź do "Edge Functions" → "Settings"</li>
+                      <li>Dodaj zmienne środowiskowe:
                         <ul className="ml-4 mt-1 space-y-1 list-disc list-inside text-xs">
                           <li><code className="bg-gray-100 px-1 rounded">OPENAI_API_KEY</code> - Twój klucz OpenAI API</li>
                           <li><code className="bg-gray-100 px-1 rounded">ASSISTANT_ID</code> - ID asystenta OpenAI</li>
@@ -457,8 +470,20 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
                           Uzyskaj klucz OpenAI API <ExternalLink className="w-3 h-3" />
                         </a>
                       </li>
+                      <li>
+                        <a 
+                          href="https://platform.openai.com/assistants" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 underline inline-flex items-center gap-1"
+                        >
+                          Utwórz asystenta OpenAI <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </li>
                     </>
                   )}
+                  <li>Poczekaj 1-2 minuty na propagację zmian</li>
+                  <li>Odśwież stronę i spróbuj ponownie</li>
                 </ol>
               </div>
             </div>
