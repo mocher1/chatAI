@@ -2,13 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink, Copy, Check } from 'lucide-react';
+import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink, Copy, Check, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  isError?: boolean;
+  isRetryable?: boolean;
 }
 
 const ChatBox: React.FC = () => {
@@ -19,6 +21,7 @@ const ChatBox: React.FC = () => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const reduceMotion = useReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -29,12 +32,87 @@ const ChatBox: React.FC = () => {
 
   // Function to clean metadata from assistant responses
   const cleanAssistantResponse = (content: string): string => {
+    if (!content) return '';
+    
     // Remove file metadata like [24:14†Goldman-Recruitment...] and replace with clean source reference
     return content.replace(/\[\d+:\d+†([^\]]+)\]/g, (match, filename) => {
       // Extract just the filename without path and extension for cleaner display
       const cleanFilename = filename.split('/').pop()?.replace(/\.[^/.]+$/, '') || filename;
       return `— źródło: ${cleanFilename}`;
     });
+  };
+
+  // Function to validate assistant response
+  const validateAssistantResponse = (data: any): string | null => {
+    console.log('Validating assistant response:', data);
+    
+    if (!data) {
+      console.warn('No data received from assistant');
+      return null;
+    }
+
+    if (!data.assistantMessage) {
+      console.warn('No assistantMessage in response:', data);
+      return null;
+    }
+
+    const message = data.assistantMessage.trim();
+    if (!message || message.length === 0) {
+      console.warn('Empty assistant message received');
+      return null;
+    }
+
+    return message;
+  };
+
+  // Function to create fallback response
+  const createFallbackResponse = (userMessage: string): string => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    if (lowerMessage.includes('cv') || lowerMessage.includes('życiorys')) {
+      return `Przepraszam, nie mogłem przetworzyć Twojego pytania o CV. Oto kilka ogólnych wskazówek:
+
+**Podstawowe elementy CV:**
+- Dane kontaktowe
+- Doświadczenie zawodowe (od najnowszego)
+- Wykształcenie
+- Umiejętności techniczne
+- Języki obce
+
+**Wskazówki:**
+- Dostosuj CV do konkretnej oferty pracy
+- Używaj konkretnych liczb i osiągnięć
+- Maksymalnie 2 strony A4
+
+Spróbuj zadać bardziej konkretne pytanie, np. "Jak napisać CV na stanowisko junior developera?"`;
+    }
+
+    if (lowerMessage.includes('rozmowa') || lowerMessage.includes('rekrutacja')) {
+      return `Nie udało mi się odpowiedzieć na Twoje pytanie o rozmowę kwalifikacyjną. Oto podstawowe wskazówki:
+
+**Przygotowanie do rozmowy:**
+- Zbadaj firmę i stanowisko
+- Przygotuj pytania do rekrutera
+- Ćwicz odpowiedzi na typowe pytania
+- Przygotuj przykłady swoich osiągnięć
+
+**Podczas rozmowy:**
+- Bądź punktualny
+- Słuchaj uważnie
+- Zadawaj przemyślane pytania
+- Pokazuj entuzjazm
+
+Możesz spróbować zadać bardziej szczegółowe pytanie.`;
+    }
+
+    return `Przepraszam, nie mogłem przetworzyć Twojego pytania. Jako CareerGPT mogę pomóc Ci w:
+
+- **Pisaniu CV** - dostosowanie do stanowiska, formatowanie, treść
+- **Przygotowaniu do rozmowy** - typowe pytania, negocjacje, prezentacja
+- **Planowaniu kariery** - zmiana branży, rozwój kompetencji
+- **Analizie ofert pracy** - co oznaczają wymagania, czy warto aplikować
+
+Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
   };
 
   const adjustTextareaHeight = () => {
@@ -55,6 +133,8 @@ const ChatBox: React.FC = () => {
             role: m.role as 'user' | 'assistant',
             content: m.content ?? '',
             timestamp: m.timestamp ?? new Date().toISOString(),
+            isError: m.isError ?? false,
+            isRetryable: m.isRetryable ?? false,
           }))
         );
       } catch (err) {
@@ -153,6 +233,7 @@ const ChatBox: React.FC = () => {
   const handleNewConversation = () => {
     setMessages([]);
     setError(null);
+    setRetryCount(0);
     localStorage.removeItem('chatMessages');
     localStorage.removeItem('threadId');
     setThreadId(null);
@@ -169,23 +250,31 @@ const ChatBox: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || !threadId) return;
-
-    const userMessage = input.trim();
-    setInput('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = '44px';
+  const handleRetry = async (messageIndex: number) => {
+    const message = messages[messageIndex - 1]; // Get the user message before the failed assistant message
+    if (message && message.role === 'user') {
+      // Remove the failed message and retry
+      setMessages(prev => prev.slice(0, messageIndex));
+      await processMessage(message.content, true);
     }
-    setMessages(prev => [
-      ...prev,
-      { role: 'user', content: userMessage, timestamp: new Date().toISOString() }
-    ]);
+  };
+
+  const processMessage = async (userMessage: string, isRetry: boolean = false) => {
+    if (!threadId) return;
+
     setIsLoading(true);
     setError(null);
 
+    if (!isRetry) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'user', content: userMessage, timestamp: new Date().toISOString() }
+      ]);
+    }
+
     try {
+      console.log('Sending message to assistant:', { threadId, message: userMessage });
+
       // Wysyłamy zapytanie do naszej Edge Function
       const response = await fetch(`${FUNCTIONS_URL}/chat`, {
         method: 'POST',
@@ -198,6 +287,8 @@ const ChatBox: React.FC = () => {
           message: userMessage
         })
       });
+
+      console.log('Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -225,32 +316,71 @@ const ChatBox: React.FC = () => {
       }
 
       const data = await response.json();
+      console.log('Received data from assistant:', data);
       
-      if (!data.assistantMessage) {
-        throw new Error('Nie otrzymano odpowiedzi od asystenta.');
+      // Validate and clean the assistant response
+      const validatedMessage = validateAssistantResponse(data);
+      
+      let finalMessage: string;
+      let isError = false;
+      let isRetryable = false;
+
+      if (validatedMessage) {
+        // Clean the assistant response before adding to messages
+        finalMessage = cleanAssistantResponse(validatedMessage);
+      } else {
+        // Use fallback response if validation failed
+        console.warn('Using fallback response due to invalid assistant message');
+        finalMessage = createFallbackResponse(userMessage);
+        isError = true;
+        isRetryable = true;
       }
-      
-      // Clean the assistant response before adding to messages
-      const cleanedMessage = cleanAssistantResponse(data.assistantMessage);
       
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: cleanedMessage, timestamp: new Date().toISOString() }
+        { 
+          role: 'assistant', 
+          content: finalMessage, 
+          timestamp: new Date().toISOString(),
+          isError,
+          isRetryable
+        }
       ]);
+
+      setRetryCount(0); // Reset retry count on success
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in processMessage:', error);
       const errorMessage = error instanceof Error ? error.message : 'Wystąpił nieoczekiwany błąd';
+      
+      // Add error message with retry option
       setMessages(prev => [
         ...prev,
         {
           role: 'assistant',
-          content: `Przepraszam, wystąpił błąd: ${errorMessage}\n\nSpróbuj ponownie za chwilę lub sprawdź konfigurację aplikacji.`,
-          timestamp: new Date().toISOString()
+          content: `Przepraszam, wystąpił błąd: ${errorMessage}\n\n${createFallbackResponse(userMessage)}`,
+          timestamp: new Date().toISOString(),
+          isError: true,
+          isRetryable: retryCount < 3
         }
       ]);
+
+      setRetryCount(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading || !threadId) return;
+
+    const userMessage = input.trim();
+    setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '44px';
+    }
+
+    await processMessage(userMessage);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -447,8 +577,16 @@ const ChatBox: React.FC = () => {
                     >
                       <div className="flex gap-3 items-start max-w-[85%]">
                         {message.role === 'assistant' && (
-                          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                            <Bot className="w-4 h-4 text-white" />
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                            message.isError 
+                              ? 'bg-gradient-to-r from-orange-500 to-red-500' 
+                              : 'bg-gradient-to-r from-purple-500 to-indigo-500'
+                          }`}>
+                            {message.isError ? (
+                              <AlertCircle className="w-4 h-4 text-white" />
+                            ) : (
+                              <Bot className="w-4 h-4 text-white" />
+                            )}
                           </div>
                         )}
                         
@@ -456,30 +594,46 @@ const ChatBox: React.FC = () => {
                           className={`relative rounded-2xl px-4 py-3 shadow-sm ${
                             message.role === 'user'
                               ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                              : message.isError
+                              ? 'bg-orange-50 border border-orange-200 text-gray-800 rounded-bl-md'
                               : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md'
                           }`}
                           whileHover={{ scale: 1.01 }}
                           transition={{ duration: 0.2 }}
                         >
                           {message.role === 'assistant' && (
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(index, message.content)}
-                              className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 transition-colors rounded"
-                              title="Kopiuj wiadomość"
-                            >
-                              {copiedIndex === index ? (
-                                <Check className="w-4 h-4 text-green-500" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
+                            <div className="absolute top-2 right-2 flex gap-1">
+                              {message.isRetryable && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRetry(index)}
+                                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded"
+                                  title="Spróbuj ponownie"
+                                >
+                                  <RefreshCw className="w-4 h-4" />
+                                </button>
                               )}
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(index, message.content)}
+                                className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded"
+                                title="Kopiuj wiadomość"
+                              >
+                                {copiedIndex === index ? (
+                                  <Check className="w-4 h-4 text-green-500" />
+                                ) : (
+                                  <Copy className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
                           )}
                           
                           <ReactMarkdown
                             className={`prose prose-sm max-w-none ${
                               message.role === 'user' 
                                 ? 'prose-invert text-white/95' 
+                                : message.isError
+                                ? 'prose-orange text-gray-800'
                                 : 'prose-indigo text-gray-800'
                             }`}
                             remarkPlugins={[remarkGfm]}
@@ -501,6 +655,8 @@ const ChatBox: React.FC = () => {
                                   <span className={`inline-block w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
                                     message.role === 'user' 
                                       ? 'bg-white/70' 
+                                      : message.isError
+                                      ? 'bg-orange-400'
                                       : 'bg-indigo-400'
                                   }`}></span>
                                   <span className="flex-1">{children}</span>
@@ -516,6 +672,8 @@ const ChatBox: React.FC = () => {
                                 <strong className={`font-semibold ${
                                   message.role === 'user' 
                                     ? 'text-white' 
+                                    : message.isError
+                                    ? 'text-orange-700'
                                     : 'text-indigo-700'
                                 }`}>
                                   {children}
@@ -525,6 +683,8 @@ const ChatBox: React.FC = () => {
                                 <em className={`italic ${
                                   message.role === 'user' 
                                     ? 'text-white/90' 
+                                    : message.isError
+                                    ? 'text-orange-600'
                                     : 'text-indigo-600'
                                 }`}>
                                   {children}
@@ -534,6 +694,8 @@ const ChatBox: React.FC = () => {
                                 <code className={`px-2 py-1 rounded text-xs font-mono ${
                                   message.role === 'user' 
                                     ? 'bg-white/20 text-white' 
+                                    : message.isError
+                                    ? 'bg-orange-100 text-orange-700 border border-orange-200'
                                     : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                                 }`}>
                                   {children}
@@ -543,6 +705,8 @@ const ChatBox: React.FC = () => {
                                 <blockquote className={`border-l-4 pl-4 py-2 my-3 italic ${
                                   message.role === 'user' 
                                     ? 'border-white/50 text-white/90' 
+                                    : message.isError
+                                    ? 'border-orange-300 bg-orange-50/50 text-orange-800'
                                     : 'border-indigo-300 bg-indigo-50/50 text-indigo-800'
                                 }`}>
                                   {children}
@@ -550,21 +714,33 @@ const ChatBox: React.FC = () => {
                               ),
                               h1: ({ children }) => (
                                 <h1 className={`text-lg font-bold mb-2 mt-3 ${
-                                  message.role === 'user' ? 'text-white' : 'text-indigo-700'
+                                  message.role === 'user' 
+                                    ? 'text-white' 
+                                    : message.isError
+                                    ? 'text-orange-700'
+                                    : 'text-indigo-700'
                                 }`}>
                                   {children}
                                 </h1>
                               ),
                               h2: ({ children }) => (
                                 <h2 className={`text-base font-bold mb-2 mt-3 ${
-                                  message.role === 'user' ? 'text-white' : 'text-indigo-600'
+                                  message.role === 'user' 
+                                    ? 'text-white' 
+                                    : message.isError
+                                    ? 'text-orange-600'
+                                    : 'text-indigo-600'
                                 }`}>
                                   {children}
                                 </h2>
                               ),
                               h3: ({ children }) => (
                                 <h3 className={`text-sm font-semibold mb-2 mt-2 ${
-                                  message.role === 'user' ? 'text-white' : 'text-indigo-600'
+                                  message.role === 'user' 
+                                    ? 'text-white' 
+                                    : message.isError
+                                    ? 'text-orange-600'
+                                    : 'text-indigo-600'
                                 }`}>
                                   {children}
                                 </h3>
@@ -582,6 +758,9 @@ const ChatBox: React.FC = () => {
                                 day: '2-digit',
                                 month: '2-digit'
                               })}
+                              {message.isError && (
+                                <span className="ml-2 text-orange-500">• Odpowiedź zastępcza</span>
+                              )}
                             </div>
                           )}
                         </motion.div>
@@ -609,7 +788,7 @@ const ChatBox: React.FC = () => {
                       <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                          <span>CareerGPT pisze...</span>
+                          <span>CareerGPT analizuje Twoje pytanie...</span>
                         </div>
                       </div>
                     </div>

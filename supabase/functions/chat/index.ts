@@ -29,6 +29,10 @@ serve(async (req) => {
     const assistantId = Deno.env.get('ASSISTANT_ID')
 
     if (!openaiApiKey || !assistantId) {
+      console.error('Missing environment variables:', { 
+        hasApiKey: !!openaiApiKey, 
+        hasAssistantId: !!assistantId 
+      })
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }),
         { 
@@ -37,6 +41,8 @@ serve(async (req) => {
         }
       )
     }
+
+    console.log('Processing chat request:', { threadId, assistantId })
 
     // 1. Add user message to thread
     const addMessageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
@@ -53,10 +59,12 @@ serve(async (req) => {
     })
 
     if (!addMessageResponse.ok) {
+      const errorText = await addMessageResponse.text()
+      console.error('Failed to add message to thread:', errorText)
       throw new Error('Failed to add message to thread')
     }
 
-    // 2. Create and run assistant
+    // 2. Create and run assistant with enhanced instructions
     const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
       method: 'POST',
       headers: {
@@ -66,36 +74,66 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         assistant_id: assistantId,
-        instructions: `Jesteś CareerGPT - przyjaznym doradcą zawodowym, który specjalizuje się w polskim rynku pracy. Pomagasz w pisaniu CV, przygotowaniu do rozmów kwalifikacyjnych i planowaniu kariery. 
+        instructions: `Jesteś CareerGPT - ekspertem od polskiego rynku pracy i doradcą zawodowym. Twoja wiedza opiera się na aktualnych dokumentach, raportach i przepisach prawnych.
 
-WAŻNE ZASADY:
-- Odpowiadasz po polsku, używasz prostego języka i unikasz żargonu HR
-- Twoje odpowiedzi są konkretne i praktyczne
-- NIE pokazuj użytkownikowi wewnętrznych identyfikatorów ani metadanych plików
-- NIE używaj oznaczeń typu [24:14†plik.pdf] w odpowiedziach
-- Jeśli chcesz wskazać źródło, wystarczy nazwa pliku bez metadanych, np. "— źródło: Raport Goldman 2025"
-- Formatuj odpowiedzi czytelnie używając list punktowych i nagłówków
-- Bądź pomocny i konkretny w swoich radach
-- Używaj markdown do formatowania (nagłówki, listy, pogrubienia)
-- Strukturyzuj odpowiedzi logicznie z wyraźnymi sekcjami`
+KLUCZOWE ZASADY ODPOWIEDZI:
+1. **Zawsze odpowiadaj po polsku** - używaj naturalnego, przyjaznego języka
+2. **Bądź konkretny i praktyczny** - dawaj wykonalne rady, nie ogólniki
+3. **Strukturyzuj odpowiedzi** - używaj nagłówków, list punktowych, pogrubień
+4. **Odwołuj się do źródeł** - gdy korzystasz z dokumentów, wskaż je naturalnie
+5. **Nie pokazuj metadanych** - ukryj identyfikatory plików [xx:yy†nazwa.pdf]
+
+OBSZARY TWOJEJ EKSPERTYZY:
+- **CV i listy motywacyjne** - formatowanie, treść, dostosowanie do stanowiska
+- **Rozmowy kwalifikacyjne** - przygotowanie, typowe pytania, negocjacje
+- **Prawo pracy** - umowy, urlopy, wypowiedzenia (na podstawie Kodeksu Pracy)
+- **Rynek pracy** - trendy płacowe, wymagania, perspektywy rozwoju
+- **Planowanie kariery** - zmiana branży, rozwój kompetencji, awanse
+
+SPOSÓB ODPOWIADANIA:
+- Zacznij od bezpośredniej odpowiedzi na pytanie
+- Podaj konkretne kroki do wykonania
+- Dodaj praktyczne przykłady gdy to możliwe
+- Zakończ pytaniem lub zachętą do dalszej rozmowy
+
+JEŚLI NIE MASZ INFORMACJI:
+- Przyznaj się szczerze, że nie masz danej informacji
+- Zaproponuj alternatywne rozwiązanie lub temat
+- Skieruj na odpowiednie źródła zewnętrzne
+
+FORMATOWANIE:
+- Używaj **pogrubień** dla kluczowych punktów
+- Twórz listy punktowe dla kroków i wyliczeń
+- Stosuj nagłówki ## dla głównych sekcji
+- Dodawaj > cytaty dla ważnych informacji
+
+Pamiętaj: Jesteś zaufanym doradcą, nie chatbotem. Twoje odpowiedzi mają pomagać ludziom w podejmowaniu mądrych decyzji zawodowych.`
       })
     })
 
     if (!runResponse.ok) {
+      const errorText = await runResponse.text()
+      console.error('Failed to create run:', errorText)
       throw new Error('Failed to create run')
     }
 
     const run = await runResponse.json()
+    console.log('Created run:', run.id)
 
-    // 3. Poll run status until completion
+    // 3. Poll run status until completion with timeout
     let runStatus = run
-    while (runStatus.status !== 'completed') {
+    let pollCount = 0
+    const maxPolls = 60 // 60 seconds timeout
+    
+    while (runStatus.status !== 'completed' && pollCount < maxPolls) {
       if (runStatus.status === 'failed' || runStatus.status === 'cancelled') {
-        throw new Error(`Run ${runStatus.status}`)
+        console.error('Run failed or cancelled:', runStatus)
+        throw new Error(`Run ${runStatus.status}: ${runStatus.last_error?.message || 'Unknown error'}`)
       }
 
       // Wait 1 second before checking again
       await new Promise(resolve => setTimeout(resolve, 1000))
+      pollCount++
 
       const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${run.id}`, {
         headers: {
@@ -105,14 +143,22 @@ WAŻNE ZASADY:
       })
 
       if (!statusResponse.ok) {
+        const errorText = await statusResponse.text()
+        console.error('Failed to check run status:', errorText)
         throw new Error('Failed to check run status')
       }
 
       runStatus = await statusResponse.json()
+      console.log(`Run status (poll ${pollCount}):`, runStatus.status)
+    }
+
+    if (runStatus.status !== 'completed') {
+      console.error('Run timed out:', runStatus)
+      throw new Error('Assistant response timed out')
     }
 
     // 4. Get the assistant's response
-    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?limit=1`, {
+    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?limit=1&order=desc`, {
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
         'OpenAI-Beta': 'assistants=v2'
@@ -120,11 +166,40 @@ WAŻNE ZASADY:
     })
 
     if (!messagesResponse.ok) {
+      const errorText = await messagesResponse.text()
+      console.error('Failed to get messages:', errorText)
       throw new Error('Failed to get messages')
     }
 
     const messages = await messagesResponse.json()
-    const assistantMessage = messages.data[0].content[0].text.value
+    console.log('Retrieved messages:', messages.data?.length || 0)
+
+    // Validate message structure
+    if (!messages.data || messages.data.length === 0) {
+      console.error('No messages returned')
+      throw new Error('No response from assistant')
+    }
+
+    const latestMessage = messages.data[0]
+    if (!latestMessage.content || latestMessage.content.length === 0) {
+      console.error('Empty message content')
+      throw new Error('Empty response from assistant')
+    }
+
+    const messageContent = latestMessage.content[0]
+    if (!messageContent.text || !messageContent.text.value) {
+      console.error('Invalid message structure:', messageContent)
+      throw new Error('Invalid response format from assistant')
+    }
+
+    const assistantMessage = messageContent.text.value.trim()
+    
+    if (!assistantMessage) {
+      console.error('Empty assistant message after trim')
+      throw new Error('Empty response from assistant')
+    }
+
+    console.log('Successfully processed assistant response, length:', assistantMessage.length)
 
     return new Response(
       JSON.stringify({ assistantMessage }),
@@ -135,10 +210,21 @@ WAŻNE ZASADY:
 
   } catch (error) {
     console.error('Error in chat function:', error)
+    
+    // Return more specific error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    const statusCode = errorMessage.includes('configuration') ? 500 : 
+                      errorMessage.includes('timeout') ? 408 : 
+                      errorMessage.includes('Empty response') ? 204 : 500
+
     return new Response(
-      JSON.stringify({ error: 'Failed to process chat message' }),
+      JSON.stringify({ 
+        error: 'Failed to process chat message',
+        details: errorMessage,
+        timestamp: new Date().toISOString()
+      }),
       { 
-        status: 500, 
+        status: statusCode, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
