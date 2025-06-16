@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { threadId, message } = await req.json()
+    const { threadId, message, promptVariantId } = await req.json()
 
     if (!threadId || !message) {
       return new Response(
@@ -42,7 +42,7 @@ serve(async (req) => {
       )
     }
 
-    console.log('Processing chat request:', { threadId, assistantId })
+    console.log('Processing chat request:', { threadId, assistantId, promptVariantId })
 
     // 1. Add user message to thread
     const addMessageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
@@ -64,17 +64,8 @@ serve(async (req) => {
       throw new Error('Failed to add message to thread')
     }
 
-    // 2. Create and run assistant with enhanced instructions
-    const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'OpenAI-Beta': 'assistants=v2',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        assistant_id: assistantId,
-        instructions: `Jesteś CareerGPT - ekspertem od polskiego rynku pracy i doradcą zawodowym. Twoja wiedza opiera się na aktualnych dokumentach, raportach i przepisach prawnych.
+    // 2. Get custom instructions based on prompt variant (if provided)
+    let customInstructions = `Jesteś CareerGPT - ekspertem od polskiego rynku pracy i doradcą zawodowym. Twoja wiedza opiera się na aktualnych dokumentach, raportach i przepisach prawnych.
 
 KLUCZOWE ZASADY ODPOWIEDZI:
 1. **Zawsze odpowiadaj po polsku** - używaj naturalnego, przyjaznego języka
@@ -107,7 +98,28 @@ FORMATOWANIE:
 - Stosuj nagłówki ## dla głównych sekcji
 - Dodawaj > cytaty dla ważnych informacji
 
-Pamiętaj: Jesteś zaufanym doradcą, nie chatbotem. Twoje odpowiedzi mają pomagać ludziom w podejmowaniu mądrych decyzji zawodowych.`
+Pamiętaj: Jesteś zaufanym doradcą, nie chatbotem. Twoje odpowiedzi mają pomagać ludziom w podejmowaniu mądrych decyzji zawodowych.`;
+
+    // If we have a prompt variant ID, we could fetch custom instructions from database
+    // For now, we'll use the default instructions with potential A/B testing variations
+    if (promptVariantId === 'enhanced') {
+      customInstructions += `\n\nDODATKOWE WYTYCZNE (Wariant Enhanced):
+- **Zawsze podawaj konkretne przykłady** - każda rada powinna mieć praktyczny przykład
+- **Używaj liczb i danych** - gdy to możliwe, odwołuj się do statystyk rynku pracy
+- **Proponuj następne kroki** - na końcu każdej odpowiedzi zasugeruj konkretne działania`;
+    }
+
+    // 3. Create and run assistant with enhanced instructions
+    const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'OpenAI-Beta': 'assistants=v2',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        assistant_id: assistantId,
+        instructions: customInstructions
       })
     })
 
@@ -120,7 +132,7 @@ Pamiętaj: Jesteś zaufanym doradcą, nie chatbotem. Twoje odpowiedzi mają poma
     const run = await runResponse.json()
     console.log('Created run:', run.id)
 
-    // 3. Poll run status until completion with timeout
+    // 4. Poll run status until completion with timeout
     let runStatus = run
     let pollCount = 0
     const maxPolls = 60 // 60 seconds timeout
@@ -157,7 +169,7 @@ Pamiętaj: Jesteś zaufanym doradcą, nie chatbotem. Twoje odpowiedzi mają poma
       throw new Error('Assistant response timed out')
     }
 
-    // 4. Get the assistant's response
+    // 5. Get the assistant's response
     const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages?limit=1&order=desc`, {
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
@@ -202,7 +214,10 @@ Pamiętaj: Jesteś zaufanym doradcą, nie chatbotem. Twoje odpowiedzi mają poma
     console.log('Successfully processed assistant response, length:', assistantMessage.length)
 
     return new Response(
-      JSON.stringify({ assistantMessage }),
+      JSON.stringify({ 
+        assistantMessage,
+        promptVariantUsed: promptVariantId || 'default'
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }

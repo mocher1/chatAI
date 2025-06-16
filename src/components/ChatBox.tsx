@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink, Copy, Check, RefreshCw } from 'lucide-react';
+import { Send, Loader2, User, Bot, AlertCircle, Settings, ExternalLink, Copy, Check, RefreshCw, Star } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { analyticsService } from '../services/analyticsService';
+import { PromptVariant } from '../types/analytics';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -11,6 +13,8 @@ interface Message {
   timestamp: string;
   isError?: boolean;
   isRetryable?: boolean;
+  interactionId?: string;
+  responseTimeMs?: number;
 }
 
 const ChatBox: React.FC = () => {
@@ -22,6 +26,8 @@ const ChatBox: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [currentPromptVariant, setCurrentPromptVariant] = useState<PromptVariant | null>(null);
+  const [showSatisfactionRating, setShowSatisfactionRating] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -135,6 +141,8 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
             timestamp: m.timestamp ?? new Date().toISOString(),
             isError: m.isError ?? false,
             isRetryable: m.isRetryable ?? false,
+            interactionId: m.interactionId,
+            responseTimeMs: m.responseTimeMs,
           }))
         );
       } catch (err) {
@@ -149,6 +157,9 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
     } else {
       createThread();
     }
+
+    // Załaduj aktywny wariant promptu
+    loadPromptVariant();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -167,6 +178,15 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
+
+  const loadPromptVariant = async () => {
+    try {
+      const variant = await analyticsService.getActivePromptVariant();
+      setCurrentPromptVariant(variant);
+    } catch (error) {
+      console.error('Failed to load prompt variant:', error);
+    }
+  };
 
   const createThread = async () => {
     setIsInitializing(true);
@@ -259,9 +279,19 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
     }
   };
 
+  const handleSatisfactionRating = async (interactionId: string, rating: number) => {
+    try {
+      await analyticsService.logUserSatisfaction(interactionId, rating);
+      setShowSatisfactionRating(null);
+    } catch (error) {
+      console.error('Failed to log satisfaction rating:', error);
+    }
+  };
+
   const processMessage = async (userMessage: string, isRetry: boolean = false) => {
     if (!threadId) return;
 
+    const startTime = Date.now();
     setIsLoading(true);
     setError(null);
 
@@ -324,6 +354,8 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
       let finalMessage: string;
       let isError = false;
       let isRetryable = false;
+      const responseTime = Date.now() - startTime;
+      const interactionId = `interaction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       if (validatedMessage) {
         // Clean the assistant response before adding to messages
@@ -343,14 +375,40 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
           content: finalMessage, 
           timestamp: new Date().toISOString(),
           isError,
-          isRetryable
+          isRetryable,
+          interactionId,
+          responseTimeMs: responseTime
         }
       ]);
+
+      // Log interaction to analytics
+      try {
+        await analyticsService.logChatInteraction({
+          threadId,
+          userMessage,
+          assistantMessage: finalMessage,
+          responseTimeMs: responseTime,
+          success: !isError,
+          errorMessage: isError ? 'Fallback response used' : undefined,
+          promptVariantId: currentPromptVariant?.id,
+        });
+
+        // Show satisfaction rating for successful responses
+        if (!isError) {
+          setTimeout(() => {
+            setShowSatisfactionRating(interactionId);
+          }, 2000);
+        }
+      } catch (analyticsError) {
+        console.error('Failed to log analytics:', analyticsError);
+      }
 
       setRetryCount(0); // Reset retry count on success
     } catch (error) {
       console.error('Error in processMessage:', error);
       const errorMessage = error instanceof Error ? error.message : 'Wystąpił nieoczekiwany błąd';
+      const responseTime = Date.now() - startTime;
+      const interactionId = `interaction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Add error message with retry option
       setMessages(prev => [
@@ -360,9 +418,26 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
           content: `Przepraszam, wystąpił błąd: ${errorMessage}\n\n${createFallbackResponse(userMessage)}`,
           timestamp: new Date().toISOString(),
           isError: true,
-          isRetryable: retryCount < 3
+          isRetryable: retryCount < 3,
+          interactionId,
+          responseTimeMs: responseTime
         }
       ]);
+
+      // Log failed interaction
+      try {
+        await analyticsService.logChatInteraction({
+          threadId: threadId || '',
+          userMessage,
+          assistantMessage: '',
+          responseTimeMs: responseTime,
+          success: false,
+          errorMessage,
+          promptVariantId: currentPromptVariant?.id,
+        });
+      } catch (analyticsError) {
+        console.error('Failed to log failed interaction:', analyticsError);
+      }
 
       setRetryCount(prev => prev + 1);
     } finally {
@@ -512,7 +587,14 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
         >
           Porozmawiaj z CareerGPT
         </motion.h2>
-        <div className="text-right mb-4">
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-sm text-gray-600">
+            {currentPromptVariant && (
+              <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
+                Wariant: {currentPromptVariant.name}
+              </span>
+            )}
+          </div>
           <motion.button
             type="button"
             onClick={handleNewConversation}
@@ -751,15 +833,39 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
                           </ReactMarkdown>
                           
                           {message.role === 'assistant' && (
-                            <div className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-100">
-                              {new Date(message.timestamp).toLocaleString('pl-PL', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                day: '2-digit',
-                                month: '2-digit'
-                              })}
-                              {message.isError && (
-                                <span className="ml-2 text-orange-500">• Odpowiedź zastępcza</span>
+                            <div className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
+                              <span>
+                                {new Date(message.timestamp).toLocaleString('pl-PL', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  day: '2-digit',
+                                  month: '2-digit'
+                                })}
+                                {message.isError && (
+                                  <span className="ml-2 text-orange-500">• Odpowiedź zastępcza</span>
+                                )}
+                                {message.responseTimeMs && (
+                                  <span className="ml-2 text-gray-400">
+                                    • {message.responseTimeMs < 1000 ? `${message.responseTimeMs}ms` : `${(message.responseTimeMs / 1000).toFixed(1)}s`}
+                                  </span>
+                                )}
+                              </span>
+                              
+                              {/* Satisfaction rating */}
+                              {showSatisfactionRating === message.interactionId && !message.isError && (
+                                <div className="flex items-center gap-1 ml-4">
+                                  <span className="text-xs text-gray-500 mr-1">Oceń:</span>
+                                  {[1, 2, 3, 4, 5].map((rating) => (
+                                    <button
+                                      key={rating}
+                                      onClick={() => message.interactionId && handleSatisfactionRating(message.interactionId, rating)}
+                                      className="text-gray-300 hover:text-yellow-400 transition-colors"
+                                      title={`Oceń ${rating}/5`}
+                                    >
+                                      <Star className="w-3 h-3" />
+                                    </button>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           )}

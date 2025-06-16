@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import ForWhom from './components/ForWhom';
@@ -7,8 +7,11 @@ import HowItWorks from './components/HowItWorks';
 const ChatBox = lazy(() => import('./components/ChatBox'));
 import Footer from './components/Footer';
 import ConnectionTest from './components/ConnectionTest';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 function App() {
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
   // Show connection test if in development or if there are connection issues
   const showConnectionTest = import.meta.env.DEV || 
     !import.meta.env.VITE_SUPABASE_URL || 
@@ -34,6 +37,12 @@ function App() {
         </Suspense>
       </main>
       <Footer />
+      
+      {/* Analytics Dashboard */}
+      <AnalyticsDashboard 
+        isVisible={showAnalytics}
+        onToggle={() => setShowAnalytics(!showAnalytics)}
+      />
     </div>
   );
 }
