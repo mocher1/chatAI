@@ -85,7 +85,7 @@ class AnalyticsService {
     }
   }
 
-  // Aktualizacja sesji użytkownika
+  // Aktualizacja sesji użytkownika - fixed to handle response properly
   private async updateUserSession(): Promise<void> {
     try {
       const sessionData = {
@@ -94,19 +94,39 @@ class AnalyticsService {
         last_activity_at: new Date().toISOString(),
       };
 
-      // Spróbuj zaktualizować istniejącą sesję
-      const updateResult = await this.makeRequest(`user_sessions?session_id=eq.${this.sessionId}`, {
+      // Attempt to update the existing session using return=representation to check if rows were updated
+      const updateResponse = await fetch(`${this.supabaseUrl}/rest/v1/user_sessions?session_id=eq.${this.sessionId}`, {
         method: 'PATCH',
         body: JSON.stringify({
           last_activity_at: sessionData.last_activity_at,
         }),
         headers: {
-          'Prefer': 'return=minimal',
+          'apikey': this.supabaseKey,
+          'Authorization': `Bearer ${this.supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation', // Changed from 'return=minimal'
         },
       });
 
-      // Jeśli nie ma sesji do zaktualizowania, utwórz nową
-      if (updateResult === null) {
+      if (!updateResponse.ok) {
+        console.error('Failed to update user session:', updateResponse.status, await updateResponse.text());
+        // Fallback to creating a new session if update failed
+        await this.makeRequest('user_sessions', {
+          method: 'POST',
+          body: JSON.stringify({
+            session_id: sessionData.session_id,
+            user_agent: sessionData.user_agent,
+            last_activity_at: sessionData.last_activity_at,
+            started_at: new Date().toISOString(),
+            total_interactions: 1,
+          }),
+        });
+        return;
+      }
+
+      const updatedData = await updateResponse.json();
+      // If updatedData.length is 0, no row matched the filter, so the session didn't exist
+      if (updatedData.length === 0) {
         await this.makeRequest('user_sessions', {
           method: 'POST',
           body: JSON.stringify({

@@ -1,6 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -53,8 +50,8 @@ class JobScraper {
     console.log('Starting JustJoin.it scraping...');
     
     try {
-      // JustJoin.it ma publiczne API
-      const response = await fetch('https://api.justjoin.it/v2/user-panel/offers?page=1&sortBy=published&orderBy=DESC&perPage=100', {
+      // Updated JustJoin.it API endpoint
+      const response = await fetch('https://justjoin.it/api/offers', {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; CareerGPT-Bot/1.0)',
           'Accept': 'application/json',
@@ -66,13 +63,13 @@ class JobScraper {
       }
 
       const data = await response.json();
-      console.log(`Fetched ${data.data?.length || 0} offers from JustJoin.it`);
+      console.log(`Fetched ${data?.length || 0} offers from JustJoin.it`);
       
-      if (!data.data || !Array.isArray(data.data)) {
+      if (!data || !Array.isArray(data)) {
         throw new Error('Invalid response format from JustJoin.it API');
       }
 
-      return data.data.map((offer: any) => this.transformJustJoinOffer(offer));
+      return data.map((offer: any) => this.transformJustJoinOffer(offer));
     } catch (error) {
       console.error('Error scraping JustJoin.it:', error);
       throw error;
@@ -80,40 +77,36 @@ class JobScraper {
   }
 
   private transformJustJoinOffer(offer: any): JobOffer {
-    // Wyciągnij informacje o wynagrodzeniu
-    const employment = offer.employmentTypes?.[0];
-    const salary = employment?.salary;
+    // Updated to match new API structure
+    const salaryFrom = offer.salary_from || null;
+    const salaryTo = offer.salary_to || null;
+    const salaryCurrency = offer.salary_currency || 'PLN';
     
-    // Normalizuj poziom doświadczenia
-    const experienceLevel = this.normalizeExperienceLevel(offer.experienceLevel);
+    const employmentType = this.normalizeEmploymentType(offer.employment_type || '');
+    const experienceLevel = this.normalizeExperienceLevel(offer.experience_level || '');
     
-    // Wyciągnij technologie
-    const technologies = offer.requiredSkills?.map((skill: any) => skill.name) || [];
+    // Updated field mapping for new API
+    const technologies = offer.skills?.map((skill: any) => skill.name) || [];
+    const location = offer.city || (offer.remote_work_possible ? 'Remote' : '');
     
-    // Wyciągnij lokalizację
-    const location = offer.city || offer.workplaceType;
-    
-    // Wyciągnij typ zatrudnienia
-    const employmentType = this.normalizeEmploymentType(employment?.type);
-
     return {
       externalId: `justjoin_${offer.id}`,
       title: offer.title || '',
-      company: offer.companyName || '',
+      company: offer.company_name || '',
       location: location,
-      salaryMin: salary?.from,
-      salaryMax: salary?.to,
-      salaryCurrency: salary?.currency || 'PLN',
+      salaryMin: salaryFrom,
+      salaryMax: salaryTo,
+      salaryCurrency: salaryCurrency,
       employmentType: employmentType,
       experienceLevel: experienceLevel,
-      requirements: this.extractRequirements(offer.body || ''),
-      niceToHave: this.extractNiceToHave(offer.body || ''),
-      benefits: [], // JustJoin.it nie zawsze ma strukturalne benefity
-      description: offer.body || '',
+      requirements: this.extractRequirements(offer.description || ''),
+      niceToHave: this.extractNiceToHave(offer.description || ''),
+      benefits: [], 
+      description: offer.description || '',
       technologies: technologies,
       sourcePortal: 'justjoin',
       sourceUrl: `https://justjoin.it/offers/${offer.id}`,
-      postedDate: offer.publishedAt || new Date().toISOString(),
+      postedDate: offer.published_at || new Date().toISOString(),
     };
   }
 
@@ -303,7 +296,10 @@ class JobScraper {
   }
 }
 
-serve(async (req) => {
+// Import createClient from npm package
+import { createClient } from 'npm:@supabase/supabase-js@2'
+
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
