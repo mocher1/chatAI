@@ -112,3 +112,5 @@ Aplikacja jest automatycznie wdrażana z Edge Functions. Upewnij się, że:
 - ✅ Responsywny design
 - ✅ Animacje i mikrointerakcje
 - ✅ Lokalne przechowywanie historii czatu
+- ✅ System analityki i monitoringu
+- ✅ A/B testing promptów
