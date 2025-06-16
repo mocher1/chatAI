@@ -826,7 +826,7 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
                 ) : (
                   <Send className="w-5 h-5" />
                 )}
-              </button>
+              </motion.button>
             </div>
           </form>
         </motion.div>
