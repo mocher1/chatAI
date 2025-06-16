@@ -37,6 +37,8 @@ class AnalyticsService {
 
     if (!response.ok) {
       console.error(`Analytics API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
       return null;
     }
 
@@ -50,9 +52,18 @@ class AnalyticsService {
   // Logowanie interakcji z chatem - zwraca UUID z bazy danych
   async logChatInteraction(interaction: Omit<ChatInteraction, 'sessionId'>): Promise<string | null> {
     try {
-      const interactionData: ChatInteraction = {
-        ...interaction,
-        sessionId: this.sessionId,
+      // Map camelCase to snake_case for database
+      const interactionData = {
+        session_id: this.sessionId,
+        thread_id: interaction.threadId,
+        user_message: interaction.userMessage,
+        assistant_message: interaction.assistantMessage,
+        response_time_ms: interaction.responseTimeMs,
+        success: interaction.success,
+        error_message: interaction.errorMessage,
+        prompt_variant_id: interaction.promptVariantId,
+        question_category: interaction.questionCategory,
+        user_satisfaction: interaction.userSatisfaction,
       };
 
       const result = await this.makeRequest('chat_interactions', {
@@ -77,32 +88,31 @@ class AnalyticsService {
   // Aktualizacja sesji użytkownika
   private async updateUserSession(): Promise<void> {
     try {
-      const sessionData: Partial<UserSession> = {
-        sessionId: this.sessionId,
-        userAgent: navigator.userAgent,
-        lastActivityAt: new Date().toISOString(),
+      const sessionData = {
+        session_id: this.sessionId,
+        user_agent: navigator.userAgent,
+        last_activity_at: new Date().toISOString(),
       };
 
       // Spróbuj zaktualizować istniejącą sesję
-      const updateResponse = await this.makeRequest(`user_sessions?session_id=eq.${this.sessionId}`, {
+      const updateResult = await this.makeRequest(`user_sessions?session_id=eq.${this.sessionId}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          last_activity_at: sessionData.lastActivityAt,
-          total_interactions: 'total_interactions + 1',
+          last_activity_at: sessionData.last_activity_at,
         }),
         headers: {
           'Prefer': 'return=minimal',
         },
       });
 
-      // Jeśli sesja nie istnieje, utwórz nową z prawidłowymi nazwami kolumn
-      if (!updateResponse) {
+      // Jeśli nie ma sesji do zaktualizowania, utwórz nową
+      if (updateResult === null) {
         await this.makeRequest('user_sessions', {
           method: 'POST',
           body: JSON.stringify({
-            session_id: sessionData.sessionId,
-            user_agent: sessionData.userAgent,
-            last_activity_at: sessionData.lastActivityAt,
+            session_id: sessionData.session_id,
+            user_agent: sessionData.user_agent,
+            last_activity_at: sessionData.last_activity_at,
             started_at: new Date().toISOString(),
             total_interactions: 1,
           }),
