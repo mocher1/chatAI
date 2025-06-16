@@ -34,11 +34,11 @@ const ChatBox: React.FC = () => {
   const cleanAssistantResponse = (content: string): string => {
     if (!content) return '';
     
-    // Remove file metadata like [24:14†Goldman-Recruitment...] and replace with clean source reference
-    return content.replace(/\[\d+:\d+†([^\]]+)\]/g, (match, filename) => {
+    // Remove file metadata like 【32:11†Raport-placowy-2025-HAYS.pdf】 and replace with clean source reference
+    return content.replace(/【\d+:\d+†([^】]+)】/g, (match, filename) => {
       // Extract just the filename without path and extension for cleaner display
       const cleanFilename = filename.split('/').pop()?.replace(/\.[^/.]+$/, '') || filename;
-      return `— źródło: ${cleanFilename}`;
+      return `\n\n📄 *Źródło: ${cleanFilename}*`;
     });
   };
 
@@ -826,7 +826,7 @@ Spróbuj zadać bardziej konkretne pytanie z jednego z tych obszarów.`;
                 ) : (
                   <Send className="w-5 h-5" />
                 )}
-              </motion.button>
+              </button>
             </div>
           </form>
         </motion.div>
